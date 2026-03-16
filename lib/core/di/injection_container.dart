@@ -19,6 +19,7 @@ import 'package:ayobami/presentation/bloc/chat/chat_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_bloc.dart';
+import 'package:ayobami/core/voice/voice_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -91,4 +92,7 @@ Future<void> init() async {
     getSettings: sl(),
     saveSettings: sl(),
   ));
+
+  // Voice Controller
+  sl.registerLazySingleton(() => VoiceController());
 }
