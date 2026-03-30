@@ -36,7 +36,7 @@ Future<void> init() async {
     () => LocalDataSourceImpl(sharedPreferences: sl(), databaseHelper: sl()),
   );
   sl.registerLazySingleton<MarketApiService>(
-    () => MarketApiServiceImpl(),
+    () => MarketApiService(),
   );
   
   // Repositories

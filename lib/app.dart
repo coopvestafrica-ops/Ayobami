@@ -12,6 +12,7 @@ import 'package:ayobami/presentation/bloc/portfolio/portfolio_event.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_bloc.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_event.dart';
 import 'package:ayobami/presentation/pages/home_page.dart';
+import 'package:ayobami/presentation/pages/main_page.dart';
 
 class AyobamiApp extends StatelessWidget {
   const AyobamiApp({super.key});
@@ -49,7 +50,7 @@ class AyobamiApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const HomePage(),
+            home: const MainPage(),
           );
         },
       ),

@@ -7,6 +7,7 @@ import 'package:ayobami/presentation/bloc/chat/chat_event.dart';
 import 'package:ayobami/presentation/bloc/chat/chat_state.dart';
 import 'package:ayobami/presentation/widgets/chat_bubble.dart';
 import 'package:ayobami/presentation/widgets/voice_button.dart';
+import 'package:ayobami/presentation/pages/market_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

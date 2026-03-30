@@ -6,8 +6,24 @@ class GetMarketData {
 
   GetMarketData(this.repository);
 
-  Future<List<CryptoCurrency>> call({String vsCurrency = 'usd'}) async {
-    return await repository.getMarketData(vsCurrency: vsCurrency);
+  Future<MarketData> call({int limit = 50, String? cryptoId}) async {
+    final cryptos = await repository.getMarketData();
+    
+    // Filter by cryptoId if provided
+    List<CryptoCurrency> filteredCryptos = cryptos;
+    if (cryptoId != null) {
+      filteredCryptos = cryptos.where((c) => c.id == cryptoId).toList();
+    } else if (limit > 0 && limit < cryptos.length) {
+      filteredCryptos = cryptos.take(limit).toList();
+    }
+    
+    final forexPairs = await repository.getForexRates();
+    
+    return MarketData(
+      cryptos: filteredCryptos,
+      forexPairs: forexPairs,
+      lastUpdated: DateTime.now(),
+    );
   }
 }
 
