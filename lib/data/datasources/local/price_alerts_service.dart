@@ -130,12 +130,12 @@ class PriceAlertsService {
     for (final alert in alerts) {
       if (!alert.isEnabled || alert.triggered) continue;
       
-      final priceData = prices.firstWhere(
+      final priceDataIndex = prices.indexWhere(
         (p) => p['id'] == alert.cryptoId,
-        orElse: () => null,
       );
       
-      if (priceData == null) continue;
+      if (priceDataIndex == -1) continue;
+      final priceData = prices[priceDataIndex];
       
       final currentPrice = (priceData['currentPrice'] as num).toDouble();
       bool shouldTrigger = false;

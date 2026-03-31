@@ -251,7 +251,7 @@ class RiskRewardAnalyzer {
     final potentialReward = ((targetPrice - entryPrice) / entryPrice * 100);
     final potentialRisk = ((entryPrice - stopLossPrice).abs() / entryPrice * 100);
     
-    final rewardRiskRatio = potentialRisk > 0 ? potentialReward / potentialRisk : 0;
+    final rewardRiskRatio = potentialRisk > 0 ? potentialReward / potentialRisk : 0.0;
     
     String recommendation;
     if (rewardRiskRatio >= 2.0) {

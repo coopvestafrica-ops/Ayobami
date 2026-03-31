@@ -1,6 +1,5 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ayobami/core/ai/openai_service.dart';
 import 'package:ayobami/core/services/binance_api_service.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';

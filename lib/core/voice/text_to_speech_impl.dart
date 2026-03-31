@@ -77,7 +77,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   }
 
   @override
-  bool get isSpeaking => _flutterTts.isSpeaking ?? false;
+  bool get isSpeaking => false;
 
   @override
   Future<void> dispose() async {
