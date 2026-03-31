@@ -5,6 +5,7 @@ import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_event.dart';
 import 'package:ayobami/presentation/bloc/market/market_state.dart';
+import 'package:ayobami/presentation/widgets/trading_view_chart.dart';
 
 class MarketPage extends StatefulWidget {
   const MarketPage({super.key});
@@ -315,6 +316,24 @@ class _CryptoDetailSheet extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // TradingView Chart Section
+              const Text(
+                'Chart',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // TradingView Chart
+              TradingViewChart(
+                symbol: '${crypto.symbol.toUpperCase()}USDT',
+                isForex: false,
               ),
               
               const SizedBox(height: 24),
