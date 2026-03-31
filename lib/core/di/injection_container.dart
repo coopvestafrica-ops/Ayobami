@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ayobami/core/ai/openai_service.dart';
+import 'package:ayobami/core/services/binance_api_service.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/market_api_service.dart';
@@ -97,6 +98,6 @@ Future<void> init() async {
   // Voice Controller
   sl.registerLazySingleton(() => VoiceController());
 
-  // OpenAI Service - uses SharedPreferences directly for API key
-  sl.registerLazySingleton(() => OpenAIService());
+  // Binance API Service - for real-time crypto data
+  sl.registerLazySingleton(() => BinanceApiService());
 }
