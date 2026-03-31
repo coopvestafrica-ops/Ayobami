@@ -1,25 +1,18 @@
 import 'dart:convert';
-import 'package:openai/openai.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// OpenAI Service with function calling for real crypto data
+/// Uses HTTP directly to call the OpenAI API
 class OpenAIService {
   String? _apiKey;
-  String? get apiKey => _apiKey ??= _loadApiKey();
-  bool get isConfigured => apiKey != null && apiKey!.isNotEmpty;
+  String? get apiKey => _apiKey;
+  bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
 
   static const String _model = 'gpt-4o-mini';
-
-  String? _loadApiKey() {
-    // This will be called lazily - SharedPreferences should already be initialized
-    // For now, return empty - user needs to enter in settings
-    return '';
-  }
-
+  static const String _baseUrl = 'https://api.openai.com/v1';
   static const String _keyName = 'openai_api_key';
 
-  // System prompt that defines the AI's personality
   static const String _systemPrompt = '''You are Ayobami, a friendly crypto trading assistant.
 
 Your personality:
@@ -30,8 +23,7 @@ Your personality:
 
 You have access to tools:
 1. get_crypto_price - Get live crypto prices from Binance
-2. get_market_data - Get market data for cryptocurrencies
-3. calculate - Perform calculations
+2. calculate - Perform calculations
 
 When users ask about prices, ALWAYS use the get_crypto_price tool to get real data.
 When users ask about calculations, use the calculate tool.
@@ -39,79 +31,90 @@ Don't make up numbers - always fetch real data.''';
 
   OpenAIService();
 
-  /// Send message and get AI response with tool calling
-  Future<AIResponse> sendMessage(
+  /// Load API key from SharedPreferences
+  Future<void> loadApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    _apiKey = prefs.getString(_keyName) ?? '';
+  }
+
+  /// Send message and get AI response
+  Future<OpenAIResponse> sendMessage(
     String message, {
-    List<ChatMessage> chatHistory = const [],
+    List<OpenAIChatHistoryMessage> chatHistory = const [],
   }) async {
     if (!isConfigured) {
-      return AIResponse(
+      return OpenAIResponse(
         content: 'OpenAI API key not configured. Please add your API key in Settings.',
-        type: MessageType.error,
+        type: OpenAIMessageType.error,
       );
     }
 
     try {
-      final openai = OpenAI(apiKey: apiKey!);
-
-      // Build messages with history
-      final messages = <OpenAIChatMessage>[
-        OpenAIChatMessage(
-          role: OpenAIChatMessageRole.system,
-          content: _systemPrompt,
-        ),
-        ...chatHistory.map((m) => OpenAIChatMessage(
-          role: m.isUser
-              ? OpenAIChatMessageRole.user
-              : OpenAIChatMessageRole.assistant,
-          content: m.content,
-        )),
-        OpenAIChatMessage(
-          role: OpenAIChatMessageRole.user,
-          content: message,
-        ),
+      final messages = <Map<String, dynamic>>[
+        {'role': 'system', 'content': _systemPrompt},
+        ...chatHistory.map((m) => {
+          'role': m.isUser ? 'user' : 'assistant',
+          'content': m.content,
+        }),
+        {'role': 'user', 'content': message},
       ];
 
-      // Make request with tools
-      final response = await openai.chat.create(
-        model: _model,
-        messages: messages,
-        tools: _tools,
-        toolChoice: 'auto',
-        temperature: 0.7,
+      final response = await http.post(
+        Uri.parse('$_baseUrl/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
+        },
+        body: json.encode({
+          'model': _model,
+          'messages': messages,
+          'tools': _tools,
+          'tool_choice': 'auto',
+          'temperature': 0.7,
+        }),
       );
 
-      final choice = response.choices.first;
-
-      // Check if AI used a tool
-      if (choice.message.toolCalls != null && choice.message.toolCalls!.isNotEmpty) {
-        return await _handleToolCall(openai, choice.message.toolCalls!, messages);
+      if (response.statusCode != 200) {
+        return OpenAIResponse(
+          content: 'API Error: ${response.statusCode}',
+          type: OpenAIMessageType.error,
+        );
       }
 
-      return AIResponse(
-        content: choice.message.content ?? 'I could not generate a response.',
-        type: MessageType.text,
+      final data = json.decode(response.body);
+      final choice = data['choices'][0];
+      final messageData = choice['message'];
+
+      if (messageData['tool_calls'] != null &&
+          (messageData['tool_calls'] as List).isNotEmpty) {
+        return await _handleToolCall(
+          messageData['tool_calls'] as List,
+          messages,
+        );
+      }
+
+      return OpenAIResponse(
+        content: messageData['content'] ?? 'I could not generate a response.',
+        type: OpenAIMessageType.text,
       );
     } catch (e) {
-      return AIResponse(
+      return OpenAIResponse(
         content: 'Error: ${e.toString()}',
-        type: MessageType.error,
+        type: OpenAIMessageType.error,
       );
     }
   }
 
-  /// Handle tool calls from AI
-  Future<AIResponse> _handleToolCall(
-    OpenAI openai,
-    List<OpenAIChatToolCall> toolCalls,
-    List<OpenAIChatMessage> messages,
+  Future<OpenAIResponse> _handleToolCall(
+    List<dynamic> toolCalls,
+    List<Map<String, dynamic>> messages,
   ) async {
     String? toolResult;
 
     for (final toolCall in toolCalls) {
-      final fn = toolCall.function;
-      final name = fn.name;
-      final args = fn.arguments;
+      final fn = toolCall['function'];
+      final name = fn['name'] as String;
+      final args = json.decode(fn['arguments'] as String) as Map<String, dynamic>;
 
       if (name == 'get_crypto_price') {
         toolResult = await _getCryptoPrice(args);
@@ -121,39 +124,51 @@ Don't make up numbers - always fetch real data.''';
     }
 
     if (toolResult == null) {
-      return AIResponse(
+      return OpenAIResponse(
         content: 'Could not execute the tool.',
-        type: MessageType.error,
+        type: OpenAIMessageType.error,
       );
     }
 
-    // Add tool result to messages and get final response
-    messages.add(OpenAIChatMessage(
-      role: OpenAIChatMessageRole.tool,
-      content: toolResult,
-      toolCallId: toolCalls.first.id,
-    ));
+    messages.add({
+      'role': 'tool',
+      'content': toolResult,
+      'tool_call_id': toolCalls.first['id'],
+    });
 
-    final response = await openai.chat.create(
-      model: _model,
-      messages: messages,
-      temperature: 0.7,
+    final response = await http.post(
+      Uri.parse('$_baseUrl/chat/completions'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_apiKey',
+      },
+      body: json.encode({
+        'model': _model,
+        'messages': messages,
+        'temperature': 0.7,
+      }),
     );
 
-    final content = response.choices.first.message.content ?? 'No response';
+    if (response.statusCode != 200) {
+      return OpenAIResponse(
+        content: 'API Error: ${response.statusCode}',
+        type: OpenAIMessageType.error,
+      );
+    }
 
-    // Determine message type based on content
-    MessageType type = MessageType.text;
+    final data = json.decode(response.body);
+    final content = data['choices'][0]['message']['content'] ?? 'No response';
+
+    OpenAIMessageType type = OpenAIMessageType.text;
     if (content.toLowerCase().contains('price') ||
         content.toLowerCase().contains('btc') ||
         content.toLowerCase().contains('ethereum')) {
-      type = MessageType.marketData;
+      type = OpenAIMessageType.marketData;
     }
 
-    return AIResponse(content: content, type: type);
+    return OpenAIResponse(content: content, type: type);
   }
 
-  /// Get live crypto price from Binance
   Future<String> _getCryptoPrice(Map<String, dynamic> args) async {
     final symbol = (args['symbol'] as String?)?.toUpperCase() ?? 'BTCUSDT';
 
@@ -181,11 +196,9 @@ Don't make up numbers - always fetch real data.''';
     }
   }
 
-  /// Simple calculator
   String _calculate(Map<String, dynamic> args) {
     try {
       final expression = args['expression'] as String? ?? '';
-      // Very basic eval - in production use a proper parser
       final result = _evalExpression(expression);
       return '{"result": $result}';
     } catch (e) {
@@ -195,7 +208,6 @@ Don't make up numbers - always fetch real data.''';
 
   double _evalExpression(String expr) {
     expr = expr.replaceAll(' ', '');
-    // Handle basic operations
     if (expr.contains('+')) {
       final parts = expr.split('+');
       return double.parse(parts[0]) + double.parse(parts[1]);
@@ -215,15 +227,13 @@ Don't make up numbers - always fetch real data.''';
     return double.tryParse(expr) ?? 0;
   }
 
-  // Tool definitions for OpenAI function calling
-  static final List<OpenAIChatTool> _tools = [
-    OpenAIChatTool(
-      functionName: 'get_crypto_price',
-      description: 'Get the current price of a cryptocurrency from Binance',
-      parameters: OpenAIChatFunctionParameters(
-        name: 'get_crypto_price',
-        description: 'Get live crypto price from Binance',
-        parameters: {
+  static final List<Map<String, dynamic>> _tools = [
+    {
+      'type': 'function',
+      'function': {
+        'name': 'get_crypto_price',
+        'description': 'Get the current price of a cryptocurrency from Binance',
+        'parameters': {
           'type': 'object',
           'properties': {
             'symbol': {
@@ -233,16 +243,14 @@ Don't make up numbers - always fetch real data.''';
             },
           },
         },
-        required: [],
-      ),
-    ),
-    OpenAIChatTool(
-      functionName: 'calculate',
-      description: 'Perform a calculation',
-      parameters: OpenAIChatFunctionParameters(
-        name: 'calculate',
-        description: 'Evaluate a mathematical expression',
-        parameters: {
+      },
+    },
+    {
+      'type': 'function',
+      'function': {
+        'name': 'calculate',
+        'description': 'Perform a calculation',
+        'parameters': {
           'type': 'object',
           'properties': {
             'expression': {
@@ -250,30 +258,30 @@ Don't make up numbers - always fetch real data.''';
               'description': 'Math expression like 100 + 50',
             },
           },
+          'required': ['expression'],
         },
-        required: ['expression'],
-      ),
-    ),
+      },
+    },
   ];
 }
 
-/// Chat message for history
-class ChatMessage {
+/// Chat message for history (local to OpenAI service)
+class OpenAIChatHistoryMessage {
   final String content;
   final bool isUser;
 
-  ChatMessage({required this.content, required this.isUser});
+  OpenAIChatHistoryMessage({required this.content, required this.isUser});
 }
 
-/// AI response
-class AIResponse {
+/// AI response from OpenAI service
+class OpenAIResponse {
   final String content;
-  final MessageType type;
+  final OpenAIMessageType type;
 
-  AIResponse({required this.content, required this.type});
+  OpenAIResponse({required this.content, required this.type});
 }
 
-enum MessageType {
+enum OpenAIMessageType {
   text,
   marketData,
   tradingSignal,

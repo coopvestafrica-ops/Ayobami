@@ -22,6 +22,10 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   final _coinbaseApiSecret = TextEditingController();
   final _coinbasePassphrase = TextEditingController();
   
+  // OpenAI controllers
+  final _openaiApiKey = TextEditingController();
+  bool _isOpenAIConnected = false;
+  
   bool _isBinanceConnected = false;
   bool _isCoinbaseConnected = false;
   bool _isSaving = false;
@@ -41,6 +45,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     _coinbaseApiKey.dispose();
     _coinbaseApiSecret.dispose();
     _coinbasePassphrase.dispose();
+    _openaiApiKey.dispose();
     super.dispose();
   }
 
@@ -55,6 +60,8 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
       _coinbasePassphrase.text = prefs.getString('coinbase_passphrase') ?? '';
       _isBinanceConnected = _binanceApiKey.text.isNotEmpty;
       _isCoinbaseConnected = _coinbaseApiKey.text.isNotEmpty;
+      _openaiApiKey.text = prefs.getString('openai_api_key') ?? '';
+      _isOpenAIConnected = _openaiApiKey.text.isNotEmpty;
     });
   }
 

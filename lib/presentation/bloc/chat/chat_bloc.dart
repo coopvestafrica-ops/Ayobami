@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ayobami/domain/usecases/chat/chat_use_cases.dart';
-import 'package:ayobami/domain/usecases/settings/settings_use_cases.dart';
+import 'package:ayobami/domain/usecases/chat/get_chat_history.dart';
+import 'package:ayobami/domain/usecases/chat/send_message.dart';
+import 'package:ayobami/domain/usecases/settings/user_memory_use_cases.dart';
+import 'package:ayobami/domain/entities/chat_message.dart';
 import 'package:ayobami/core/voice/voice_controller.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
@@ -55,7 +57,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(state.copyWith(status: ChatStatus.loading));
     try {
       final response = await sendMessage(event.message);
-      final messages = List.of(state.messages);
+      final messages = List<ChatMessage>.from(state.messages);
       
       // Add user message
       messages.add(ChatMessage(
@@ -65,13 +67,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         timestamp: DateTime.now(),
       ));
       
-      // Add AI response
-      messages.add(ChatMessage(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-        content: response,
-        isUser: false,
-        timestamp: DateTime.now(),
-      ));
+      // Add AI response (sendMessage returns a ChatMessage)
+      messages.add(response);
       
       emit(state.copyWith(
         status: ChatStatus.success,

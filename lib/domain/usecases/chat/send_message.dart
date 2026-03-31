@@ -33,7 +33,7 @@ class SendMessage {
           content: updatedContent,
           isUser: false,
           timestamp: DateTime.now(),
-          type: _mapMessageType(aiResponse.type),
+          type: aiResponse.type,
         );
         await repository.saveMessage(responseMessage);
         return responseMessage;
@@ -46,7 +46,7 @@ class SendMessage {
       content: aiResponse.content,
       isUser: false,
       timestamp: DateTime.now(),
-      type: _mapMessageType(aiResponse.type),
+      type: aiResponse.type,
     );
     await repository.saveMessage(responseMessage);
 
@@ -104,18 +104,7 @@ class SendMessage {
     return null;
   }
 
-  ChatMessageType _mapMessageType(MessageType type) {
-    switch (type) {
-      case MessageType.marketData:
-        return ChatMessageType.marketData;
-      case MessageType.tradingSignal:
-        return ChatMessageType.tradingSignal;
-      case MessageType.calculator:
-        return ChatMessageType.calculator;
-      case MessageType.reminder:
-        return ChatMessageType.reminder;
-      default:
-        return ChatMessageType.text;
-    }
+  MessageType _mapMessageType(MessageType type) {
+    return type;
   }
 }

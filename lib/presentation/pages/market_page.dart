@@ -358,7 +358,7 @@ class _CryptoDetailSheet extends StatelessWidget {
                       onPressed: () {
                         // Add buy logic
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Buy ${'\$'}${crypto.symbol.toUpperCase()} - Coming soon')),
+                          SnackBar(content: Text('Buy ${crypto.symbol.toUpperCase()} - Coming soon')),
                         );
                       },
                       child: const Text('Buy'),

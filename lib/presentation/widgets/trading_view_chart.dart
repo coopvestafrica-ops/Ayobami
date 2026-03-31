@@ -149,13 +149,13 @@ class _TradingViewChartState extends State<TradingViewChart> {
     String tvSymbol = symbol;
     if (tvSymbol.endsWith('USDT')) {
       tvSymbol = tvSymbol.replaceAll('USDT', '');
-      return 'BINANCE:$tvSymbolUSD';
+      return 'BINANCE:${tvSymbol}USD';
     } else if (tvSymbol.endsWith('USD')) {
       tvSymbol = tvSymbol.replaceAll('USD', '');
-      return 'BINANCE:$tvSymbolUSD';
+      return 'BINANCE:${tvSymbol}USD';
     } else if (tvSymbol.endsWith('BTC')) {
       tvSymbol = tvSymbol.replaceAll('BTC', '');
-      return 'BINANCE:$tvSymbolBTC';
+      return 'BINANCE:${tvSymbol}BTC';
     }
 
     // Default: treat as BINANCE:SYMBOL
