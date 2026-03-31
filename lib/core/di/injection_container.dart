@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ayobami/core/ai/openai_service.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/market_api_service.dart';
@@ -61,7 +62,7 @@ Future<void> init() async {
   
   // Use Cases
   sl.registerLazySingleton(() => GetChatHistory(sl()));
-  sl.registerLazySingleton(() => SendMessage(sl()));
+  sl.registerLazySingleton(() => SendMessage(sl(), sl()));
   sl.registerLazySingleton(() => SaveUserMemory(sl()));
   sl.registerLazySingleton(() => GetUserMemory(sl()));
   sl.registerLazySingleton(() => GetMarketData(sl()));
@@ -95,4 +96,7 @@ Future<void> init() async {
 
   // Voice Controller
   sl.registerLazySingleton(() => VoiceController());
+
+  // OpenAI Service - uses SharedPreferences directly for API key
+  sl.registerLazySingleton(() => OpenAIService());
 }

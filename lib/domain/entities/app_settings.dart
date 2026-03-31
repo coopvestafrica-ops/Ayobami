@@ -8,6 +8,7 @@ class AppSettings extends Equatable {
   final bool notificationsEnabled;
   final bool priceAlertsEnabled;
   final String language;
+  final String openaiApiKey;
   
   const AppSettings({
     this.isDarkMode = false,
@@ -17,6 +18,7 @@ class AppSettings extends Equatable {
     this.notificationsEnabled = true,
     this.priceAlertsEnabled = true,
     this.language = 'en',
+    this.openaiApiKey = '',
   });
   
   AppSettings copyWith({
@@ -27,6 +29,7 @@ class AppSettings extends Equatable {
     bool? notificationsEnabled,
     bool? priceAlertsEnabled,
     String? language,
+    String? openaiApiKey,
   }) {
     return AppSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -36,6 +39,7 @@ class AppSettings extends Equatable {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       priceAlertsEnabled: priceAlertsEnabled ?? this.priceAlertsEnabled,
       language: language ?? this.language,
+      openaiApiKey: openaiApiKey ?? this.openaiApiKey,
     );
   }
   
@@ -48,5 +52,6 @@ class AppSettings extends Equatable {
     notificationsEnabled,
     priceAlertsEnabled,
     language,
+    openaiApiKey,
   ];
 }

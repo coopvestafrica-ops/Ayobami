@@ -22,8 +22,12 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   final _coinbaseApiSecret = TextEditingController();
   final _coinbasePassphrase = TextEditingController();
   
+  // OpenAI controller
+  final _openaiApiKey = TextEditingController();
+  
   bool _isBinanceConnected = false;
   bool _isCoinbaseConnected = false;
+  bool _isOpenAIConnected = false;
   bool _isSaving = false;
   
   ExchangeType _selectedExchange = ExchangeType.binance;
@@ -53,8 +57,10 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
       _coinbaseApiKey.text = prefs.getString('coinbase_api_key') ?? '';
       _coinbaseApiSecret.text = prefs.getString('coinbase_api_secret') ?? '';
       _coinbasePassphrase.text = prefs.getString('coinbase_passphrase') ?? '';
+      _openaiApiKey.text = prefs.getString('openai_api_key') ?? '';
       _isBinanceConnected = _binanceApiKey.text.isNotEmpty;
       _isCoinbaseConnected = _coinbaseApiKey.text.isNotEmpty;
+      _isOpenAIConnected = _openaiApiKey.text.isNotEmpty;
     });
   }
 
@@ -130,6 +136,36 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     });
   }
 
+  Future<void> _saveOpenAISettings() async {
+    if (_openaiApiKey.text.isEmpty) return;
+    
+    setState(() => _isSaving = true);
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('openai_api_key', _openaiApiKey.text);
+    
+    setState(() {
+      _isSaving = false;
+      _isOpenAIConnected = _openaiApiKey.text.isNotEmpty;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OpenAI settings saved. AI chat is now enabled!')),
+      );
+    }
+  }
+
+  Future<void> _clearOpenAISettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('openai_api_key');
+    
+    setState(() {
+      _openaiApiKey.clear();
+      _isOpenAIConnected = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,6 +196,11 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
             
             // Connection status
             _buildConnectionStatus(),
+            
+            const SizedBox(height: 24),
+            
+            // OpenAI Settings
+            _buildOpenAIForm(),
           ],
         ),
       ),
@@ -448,6 +489,94 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
               child: const Text('Disconnect'),
             )
           : null,
+    );
+  }
+
+  Widget _buildOpenAIForm() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'AI Chat Settings',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Connect OpenAI to enable true AI-powered chat with real crypto data.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _openaiApiKey,
+              decoration: InputDecoration(
+                labelText: 'OpenAI API Key',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.key),
+                helperText: 'Get your key from platform.openai.com',
+                suffixIcon: _isOpenAIConnected
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveOpenAISettings,
+                    icon: const Icon(Icons.save),
+                    label: Text(_isSaving ? 'Saving...' : 'Enable AI'),
+                  ),
+                ),
+                if (_isOpenAIConnected) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _clearOpenAISettings,
+                    icon: const Icon(Icons.delete_outline),
+                    color: Colors.red,
+                    tooltip: 'Remove API key',
+                  ),
+                ],
+              ],
+            ),
+            if (_isOpenAIConnected) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AI chat is active!',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
