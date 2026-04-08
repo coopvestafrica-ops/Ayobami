@@ -223,6 +223,14 @@ class LocalDataSourceImpl implements LocalDataSource {
     final notificationsEnabled = sharedPreferences.getBool('notifications_enabled') ?? true;
     final priceAlertsEnabled = sharedPreferences.getBool('price_alerts_enabled') ?? true;
     final language = sharedPreferences.getString('language') ?? 'en';
+    final openaiApiKey = sharedPreferences.getString('openai_api_key') ?? '';
+    
+    // Auto-Trade Settings
+    final autoTradeEnabled = sharedPreferences.getBool('auto_trade_enabled') ?? false;
+    final maxPositionSize = sharedPreferences.getDouble('max_position_size') ?? 10.0;
+    final stopLossPercent = sharedPreferences.getDouble('stop_loss_percent') ?? 5.0;
+    final takeProfitPercent = sharedPreferences.getDouble('take_profit_percent') ?? 10.0;
+    final executeStrongSignalsOnly = sharedPreferences.getBool('execute_strong_signals_only') ?? true;
 
     return AppSettings(
       isDarkMode: isDarkMode,
@@ -232,6 +240,12 @@ class LocalDataSourceImpl implements LocalDataSource {
       notificationsEnabled: notificationsEnabled,
       priceAlertsEnabled: priceAlertsEnabled,
       language: language,
+      openaiApiKey: openaiApiKey,
+      autoTradeEnabled: autoTradeEnabled,
+      maxPositionSize: maxPositionSize,
+      stopLossPercent: stopLossPercent,
+      takeProfitPercent: takeProfitPercent,
+      executeStrongSignalsOnly: executeStrongSignalsOnly,
     );
   }
 
@@ -244,6 +258,14 @@ class LocalDataSourceImpl implements LocalDataSource {
     await sharedPreferences.setBool('notifications_enabled', settings.notificationsEnabled);
     await sharedPreferences.setBool('price_alerts_enabled', settings.priceAlertsEnabled);
     await sharedPreferences.setString('language', settings.language);
+    await sharedPreferences.setString('openai_api_key', settings.openaiApiKey);
+    
+    // Auto-Trade Settings
+    await sharedPreferences.setBool('auto_trade_enabled', settings.autoTradeEnabled);
+    await sharedPreferences.setDouble('max_position_size', settings.maxPositionSize);
+    await sharedPreferences.setDouble('stop_loss_percent', settings.stopLossPercent);
+    await sharedPreferences.setDouble('take_profit_percent', settings.takeProfitPercent);
+    await sharedPreferences.setBool('execute_strong_signals_only', settings.executeStrongSignalsOnly);
   }
 
   @override

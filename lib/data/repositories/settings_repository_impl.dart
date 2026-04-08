@@ -10,31 +10,31 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<AppSettings> getSettings() async {
-    return AppSettings(themeMode: 'light', language: 'en');
+    return await localDataSource.getSettings();
   }
 
   @override
   Future<void> saveSettings(AppSettings settings) async {
-    // Implementation for saving settings
+    await localDataSource.saveSettings(settings);
   }
 
   @override
-  Future<UserMemory> getUserMemory() async {
-    return UserMemory(memories: []);
+  Future<List<UserMemory>> getUserMemory() async {
+    return await localDataSource.getUserMemory();
   }
 
   @override
   Future<void> saveUserMemory(UserMemory memory) async {
-    // Implementation for saving user memory
+    await localDataSource.saveUserMemory(memory);
   }
 
   @override
   Future<void> deleteUserMemory(String id) async {
-    // Implementation for deleting user memory
+    await localDataSource.deleteUserMemory(id);
   }
 
   @override
   Future<void> clearAllData() async {
-    // Implementation for clearing all data
+    await localDataSource.clearChatHistory();
   }
 }

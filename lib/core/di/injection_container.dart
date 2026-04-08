@@ -1,10 +1,13 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ayobami/core/ai/openai_service.dart';
+import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/core/services/binance_api_service.dart';
+import 'package:ayobami/core/services/autonomous_trading_service.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/market_api_service.dart';
+import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 import 'package:ayobami/data/repositories/chat_repository_impl.dart';
 import 'package:ayobami/data/repositories/market_repository_impl.dart';
 import 'package:ayobami/data/repositories/portfolio_repository_impl.dart';
@@ -41,6 +44,15 @@ Future<void> init() async {
   sl.registerLazySingleton<MarketApiService>(
     () => MarketApiService(),
   );
+  
+  // Services
+  sl.registerLazySingleton(() => ExchangeService());
+  sl.registerLazySingleton(() => AITradingSignals());
+  sl.registerLazySingleton(() => AutonomousTradingService(
+    exchangeService: sl(),
+    settingsRepository: sl(),
+    signalGenerator: sl(),
+  ));
   
   // Repositories
   sl.registerLazySingleton<ChatRepository>(

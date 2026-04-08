@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/data/datasources/remote/exchange_service.dart';
+import 'package:ayobami/core/services/autonomous_trading_service.dart';
+import 'package:ayobami/domain/repositories/settings_repository.dart';
+import 'package:get_it/get_it.dart';
 
 class TradingSignalsPage extends StatefulWidget {
   final List<CryptoCurrency> cryptos;
@@ -19,11 +22,21 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
   final AITradingSignals _signals = AITradingSignals();
   List<TradingSignal> _signalsList = [];
   MarketSentiment _sentiment = MarketSentiment.neutral;
+  bool _isAutoTradeEnabled = false;
   
   @override
   void initState() {
     super.initState();
+    _loadSettings();
     _generateSignals();
+  }
+  
+  Future<void> _loadSettings() async {
+    final settingsRepo = GetIt.I<SettingsRepository>();
+    final settings = await settingsRepo.getSettings();
+    setState(() {
+      _isAutoTradeEnabled = settings.autoTradeEnabled;
+    });
   }
   
   void _generateSignals() {
@@ -31,6 +44,23 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
       _signalsList = _signals.analyzeMarket(widget.cryptos);
       _sentiment = _signals.analyzeSentiment(widget.cryptos);
     });
+    
+    // If auto-trade is enabled, trigger the service for strong signals
+    if (_isAutoTradeEnabled) {
+      _triggerAutoTrade();
+    }
+  }
+
+  Future<void> _triggerAutoTrade() async {
+    final tradingService = GetIt.I<AutonomousTradingService>();
+    final settingsRepo = GetIt.I<SettingsRepository>();
+    final settings = await settingsRepo.getSettings();
+    
+    for (final signal in _signalsList) {
+      if (signal.confidence >= 0.8) {
+        await tradingService.executeSignal(signal, settings);
+      }
+    }
   }
 
   @override
@@ -40,6 +70,15 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
         title: const Text('AI Trading Signals'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          if (_isAutoTradeEnabled)
+            const Padding(
+              padding: EdgeInsets.only(right: 8.0),
+              child: Chip(
+                label: Text('AUTO', style: TextStyle(fontSize: 10, color: Colors.white)),
+                backgroundColor: Colors.green,
+                padding: EdgeInsets.zero,
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _generateSignals,
@@ -142,10 +181,17 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
   }
 }
 
-class _SignalCard extends StatelessWidget {
+class _SignalCard extends StatefulWidget {
   final TradingSignal signal;
   
   const _SignalCard({required this.signal});
+
+  @override
+  State<_SignalCard> createState() => _SignalCardState();
+}
+
+class _SignalCardState extends State<_SignalCard> {
+  bool _isExecuting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -166,14 +212,14 @@ class _SignalCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        signal.symbol,
+                        widget.signal.symbol,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        '\$${signal.price.toStringAsFixed(2)}',
+                        '\$${widget.signal.price.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -190,7 +236,7 @@ class _SignalCard extends StatelessWidget {
             
             // Reason
             Text(
-              signal.reason,
+              widget.signal.reason,
               style: const TextStyle(fontSize: 14),
             ),
             
@@ -202,7 +248,7 @@ class _SignalCard extends StatelessWidget {
                 Expanded(
                   child: _buildTargetChip(
                     'Target',
-                    '\$${signal.targetPrice.toStringAsFixed(2)}',
+                    '\$${widget.signal.targetPrice.toStringAsFixed(2)}',
                     Colors.green,
                   ),
                 ),
@@ -210,7 +256,7 @@ class _SignalCard extends StatelessWidget {
                 Expanded(
                   child: _buildTargetChip(
                     'Stop Loss',
-                    '\$${signal.stopLoss.toStringAsFixed(2)}',
+                    '\$${widget.signal.stopLoss.toStringAsFixed(2)}',
                     Colors.red,
                   ),
                 ),
@@ -227,8 +273,10 @@ class _SignalCard extends StatelessWidget {
                   backgroundColor: _getActionColor(),
                   foregroundColor: Colors.white,
                 ),
-                onPressed: () => _showTradeDialog(context),
-                child: Text('${signal.type.toUpperCase()} ${signal.symbol}'),
+                onPressed: _isExecuting ? null : () => _handleManualTrade(context),
+                child: _isExecuting 
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Text('${widget.signal.type.toUpperCase()} ${widget.signal.symbol}'),
               ),
             ),
           ],
@@ -241,7 +289,7 @@ class _SignalCard extends StatelessWidget {
     Color color;
     IconData icon;
     
-    switch (signal.type) {
+    switch (widget.signal.type) {
       case 'buy':
         color = Colors.green;
         icon = Icons.arrow_upward;
@@ -266,7 +314,7 @@ class _SignalCard extends StatelessWidget {
   }
   
   Widget _buildConfidenceBadge() {
-    final percent = (signal.confidence * 100).toInt();
+    final percent = (widget.signal.confidence * 100).toInt();
     Color color;
     
     if (percent >= 75) {
@@ -325,7 +373,7 @@ class _SignalCard extends StatelessWidget {
   }
   
   Color _getActionColor() {
-    switch (signal.type) {
+    switch (widget.signal.type) {
       case 'buy':
         return Colors.green;
       case 'sell':
@@ -335,30 +383,61 @@ class _SignalCard extends StatelessWidget {
     }
   }
   
-  void _showTradeDialog(BuildContext context) {
+  Future<void> _handleManualTrade(BuildContext context) async {
+    final exchangeService = GetIt.I<ExchangeService>();
+    if (!exchangeService.isBinanceConnected && !exchangeService.isCoinbaseConnected) {
+      _showErrorDialog(context, 'Exchange not connected. Please go to Settings to connect your exchange API.');
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm ${widget.signal.type.toUpperCase()}'),
+        content: Text('Do you want to execute a ${widget.signal.type} order for ${widget.signal.symbol} at \$${widget.signal.price.toStringAsFixed(2)}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: _getActionColor(), foregroundColor: Colors.white),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isExecuting = true);
+      try {
+        final tradingService = GetIt.I<AutonomousTradingService>();
+        final settingsRepo = GetIt.I<SettingsRepository>();
+        final settings = await settingsRepo.getSettings();
+        
+        // Temporarily enable auto-trade for this manual execution if it's disabled
+        final effectiveSettings = settings.copyWith(autoTradeEnabled: true);
+        await tradingService.executeSignal(widget.signal, effectiveSettings);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Successfully executed ${widget.signal.type} order for ${widget.signal.symbol}')),
+          );
+        }
+      } catch (e) {
+        if (mounted) _showErrorDialog(context, 'Trade failed: $e');
+      } finally {
+        if (mounted) setState(() => _isExecuting = false);
+      }
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Trade ${signal.symbol}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Signal: ${signal.type.toUpperCase()}'),
-            Text('Entry: \$${signal.price.toStringAsFixed(2)}'),
-            Text('Target: \$${signal.targetPrice.toStringAsFixed(2)}'),
-            Text('Stop Loss: \$${signal.stopLoss.toStringAsFixed(2)}'),
-            const SizedBox(height: 16),
-            const Text(
-              'To execute this trade, connect your exchange API in Settings.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
+        title: const Text('Error'),
+        content: Text(message),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
         ],
       ),
     );

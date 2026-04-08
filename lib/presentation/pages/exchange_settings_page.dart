@@ -28,6 +28,13 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   bool _isOpenAIConnected = false;
   final _openaiApiKey = TextEditingController();
   
+  // Auto-Trade Settings
+  bool _autoTradeEnabled = false;
+  final _maxPositionSize = TextEditingController(text: '10.0');
+  final _stopLossPercent = TextEditingController(text: '5.0');
+  final _takeProfitPercent = TextEditingController(text: '10.0');
+  bool _executeStrongSignalsOnly = true;
+  
   ExchangeType _selectedExchange = ExchangeType.binance;
 
   @override
@@ -44,6 +51,9 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     _coinbaseApiSecret.dispose();
     _coinbasePassphrase.dispose();
     _openaiApiKey.dispose();
+    _maxPositionSize.dispose();
+    _stopLossPercent.dispose();
+    _takeProfitPercent.dispose();
     super.dispose();
   }
 
@@ -60,6 +70,13 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
       _isCoinbaseConnected = _coinbaseApiKey.text.isNotEmpty;
       _openaiApiKey.text = prefs.getString('openai_api_key') ?? '';
       _isOpenAIConnected = _openaiApiKey.text.isNotEmpty;
+      
+      // Auto-Trade Settings
+      _autoTradeEnabled = prefs.getBool('auto_trade_enabled') ?? false;
+      _maxPositionSize.text = (prefs.getDouble('max_position_size') ?? 10.0).toString();
+      _stopLossPercent.text = (prefs.getDouble('stop_loss_percent') ?? 5.0).toString();
+      _takeProfitPercent.text = (prefs.getDouble('take_profit_percent') ?? 10.0).toString();
+      _executeStrongSignalsOnly = prefs.getBool('execute_strong_signals_only') ?? true;
     });
   }
 
@@ -103,6 +120,25 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Coinbase settings saved')),
+      );
+    }
+  }
+
+  Future<void> _saveAutoTradeSettings() async {
+    setState(() => _isSaving = true);
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_trade_enabled', _autoTradeEnabled);
+    await prefs.setDouble('max_position_size', double.tryParse(_maxPositionSize.text) ?? 10.0);
+    await prefs.setDouble('stop_loss_percent', double.tryParse(_stopLossPercent.text) ?? 5.0);
+    await prefs.setDouble('take_profit_percent', double.tryParse(_takeProfitPercent.text) ?? 10.0);
+    await prefs.setBool('execute_strong_signals_only', _executeStrongSignalsOnly);
+    
+    setState(() => _isSaving = false);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Auto-Trade settings saved')),
       );
     }
   }
@@ -169,7 +205,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exchange Settings'),
+        title: const Text('Settings & Automation'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -179,6 +215,10 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
           children: [
             // Warning card
             _buildWarningCard(),
+            const SizedBox(height: 24),
+            
+            // Auto-Trade Section
+            _buildAutoTradeSection(),
             const SizedBox(height: 24),
             
             // Exchange selector
@@ -235,6 +275,120 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoTradeSection() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.auto_fix_high, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text(
+                      'Autonomous Trading',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ],
+                ),
+                Switch(
+                  value: _autoTradeEnabled,
+                  onChanged: (value) {
+                    setState(() => _autoTradeEnabled = value);
+                    _saveAutoTradeSettings();
+                  },
+                ),
+              ],
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
+              'Risk Management Logic',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _maxPositionSize,
+                    decoration: const InputDecoration(
+                      labelText: 'Max Position (%)',
+                      border: OutlineInputBorder(),
+                      suffixText: '%',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _saveAutoTradeSettings(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _stopLossPercent,
+                    decoration: const InputDecoration(
+                      labelText: 'Stop Loss (%)',
+                      border: OutlineInputBorder(),
+                      suffixText: '%',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _saveAutoTradeSettings(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _takeProfitPercent,
+                    decoration: const InputDecoration(
+                      labelText: 'Take Profit (%)',
+                      border: OutlineInputBorder(),
+                      suffixText: '%',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _saveAutoTradeSettings(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _executeStrongSignalsOnly,
+                        onChanged: (value) {
+                          setState(() => _executeStrongSignalsOnly = value ?? true);
+                          _saveAutoTradeSettings();
+                        },
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'Strong Signals Only',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'When enabled, the app will automatically execute trades based on AI signals using these risk parameters.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
             ),
           ],
         ),
@@ -322,22 +476,20 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
               const SizedBox(height: 16),
               
               SwitchListTile(
-                title: const Text('Use Testnet'),
-                subtitle: const Text('For testing without real funds'),
+                title: const Text('Use Testnet (Sandbox)'),
+                subtitle: const Text('Highly recommended for testing'),
                 value: _binanceTestnet,
-                onChanged: (value) {
-                  setState(() => _binanceTestnet = value);
-                },
+                onChanged: (value) => setState(() => _binanceTestnet = value),
               ),
-              const SizedBox(height: 16),
               
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _isSaving ? null : _saveBinanceSettings,
                       icon: const Icon(Icons.save),
-                      label: Text(_isSaving ? 'Saving...' : 'Save'),
+                      label: Text(_isSaving ? 'Saving...' : 'Save Binance Settings'),
                     ),
                   ),
                   if (_isBinanceConnected) ...[
@@ -346,7 +498,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
                       onPressed: _clearBinanceSettings,
                       icon: const Icon(Icons.delete_outline),
                       color: Colors.red,
-                      tooltip: 'Remove credentials',
+                      tooltip: 'Clear credentials',
                     ),
                   ],
                 ],
@@ -421,15 +573,15 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
               
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _isSaving ? null : _saveCoinbaseSettings,
                       icon: const Icon(Icons.save),
-                      label: Text(_isSaving ? 'Saving...' : 'Save'),
+                      label: Text(_isSaving ? 'Saving...' : 'Save Coinbase Settings'),
                     ),
                   ),
                   if (_isCoinbaseConnected) ...[
@@ -438,7 +590,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
                       onPressed: _clearCoinbaseSettings,
                       icon: const Icon(Icons.delete_outline),
                       color: Colors.red,
-                      tooltip: 'Remove credentials',
+                      tooltip: 'Clear credentials',
                     ),
                   ],
                 ],
@@ -463,30 +615,34 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
             ),
             const SizedBox(height: 16),
             _buildStatusRow('Binance', _isBinanceConnected),
-            const Divider(),
+            const SizedBox(height: 8),
             _buildStatusRow('Coinbase', _isCoinbaseConnected),
+            const SizedBox(height: 8),
+            _buildStatusRow('OpenAI (AI Engine)', _isOpenAIConnected),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusRow(String exchange, bool connected) {
-    return ListTile(
-      leading: Icon(
-        connected ? Icons.check_circle : Icons.cancel,
-        color: connected ? Colors.green : Colors.grey,
-      ),
-      title: Text(exchange),
-      subtitle: Text(connected ? 'Connected' : 'Not configured'),
-      trailing: connected
-          ? TextButton(
-              onPressed: exchange == 'Binance'
-                  ? _clearBinanceSettings
-                  : _clearCoinbaseSettings,
-              child: const Text('Disconnect'),
-            )
-          : null,
+  Widget _buildStatusRow(String label, bool isConnected) {
+    return Row(
+      children: [
+        Icon(
+          isConnected ? Icons.check_circle : Icons.cancel,
+          color: isConnected ? Colors.green : Colors.red,
+        ),
+        const SizedBox(width: 12),
+        Text(label),
+        const Spacer(),
+        Text(
+          isConnected ? 'Connected' : 'Disconnected',
+          style: TextStyle(
+            color: isConnected ? Colors.green : Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 

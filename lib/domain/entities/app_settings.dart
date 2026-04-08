@@ -10,6 +10,13 @@ class AppSettings extends Equatable {
   final String language;
   final String openaiApiKey;
   
+  // Auto-Trade Settings
+  final bool autoTradeEnabled;
+  final double maxPositionSize; // Max % of balance per trade
+  final double stopLossPercent;
+  final double takeProfitPercent;
+  final bool executeStrongSignalsOnly;
+
   const AppSettings({
     this.isDarkMode = false,
     this.isVoiceEnabled = true,
@@ -19,6 +26,11 @@ class AppSettings extends Equatable {
     this.priceAlertsEnabled = true,
     this.language = 'en',
     this.openaiApiKey = '',
+    this.autoTradeEnabled = false,
+    this.maxPositionSize = 10.0,
+    this.stopLossPercent = 5.0,
+    this.takeProfitPercent = 10.0,
+    this.executeStrongSignalsOnly = true,
   });
   
   AppSettings copyWith({
@@ -30,6 +42,11 @@ class AppSettings extends Equatable {
     bool? priceAlertsEnabled,
     String? language,
     String? openaiApiKey,
+    bool? autoTradeEnabled,
+    double? maxPositionSize,
+    double? stopLossPercent,
+    double? takeProfitPercent,
+    bool? executeStrongSignalsOnly,
   }) {
     return AppSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -40,6 +57,11 @@ class AppSettings extends Equatable {
       priceAlertsEnabled: priceAlertsEnabled ?? this.priceAlertsEnabled,
       language: language ?? this.language,
       openaiApiKey: openaiApiKey ?? this.openaiApiKey,
+      autoTradeEnabled: autoTradeEnabled ?? this.autoTradeEnabled,
+      maxPositionSize: maxPositionSize ?? this.maxPositionSize,
+      stopLossPercent: stopLossPercent ?? this.stopLossPercent,
+      takeProfitPercent: takeProfitPercent ?? this.takeProfitPercent,
+      executeStrongSignalsOnly: executeStrongSignalsOnly ?? this.executeStrongSignalsOnly,
     );
   }
   
@@ -53,5 +75,10 @@ class AppSettings extends Equatable {
     priceAlertsEnabled,
     language,
     openaiApiKey,
+    autoTradeEnabled,
+    maxPositionSize,
+    stopLossPercent,
+    takeProfitPercent,
+    executeStrongSignalsOnly,
   ];
 }
