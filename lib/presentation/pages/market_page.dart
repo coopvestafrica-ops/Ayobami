@@ -6,6 +6,8 @@ import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_event.dart';
 import 'package:ayobami/presentation/bloc/market/market_state.dart';
 import 'package:ayobami/presentation/widgets/trading_view_chart.dart';
+import 'package:ayobami/data/datasources/remote/exchange_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MarketPage extends StatefulWidget {
   const MarketPage({super.key});
@@ -355,12 +357,7 @@ class _CryptoDetailSheet extends StatelessWidget {
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: () {
-                        // Add buy logic
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Buy ${'\$'}${crypto.symbol.toUpperCase()} - Coming soon')),
-                        );
-                      },
+                      onPressed: () => _handleTrade(context, crypto, 'BUY'),
                       child: const Text('Buy'),
                     ),
                   ),
@@ -371,12 +368,7 @@ class _CryptoDetailSheet extends StatelessWidget {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: () {
-                        // Add sell logic
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sell - Coming soon')),
-                        );
-                      },
+                      onPressed: () => _handleTrade(context, crypto, 'SELL'),
                       child: const Text('Sell'),
                     ),
                   ),
@@ -406,6 +398,94 @@ class _CryptoDetailSheet extends StatelessWidget {
       return '\$${(number / 1e6).toStringAsFixed(2)}M';
     } else {
       return '\$${number.toStringAsFixed(2)}';
+    }
+  }
+
+  Future<void> _handleTrade(BuildContext context, CryptoCurrency crypto, String side) async {
+    final prefs = await SharedPreferences.getInstance();
+    final apiKey = prefs.getString('binance_api_key');
+    final apiSecret = prefs.getString('binance_api_secret');
+    final isTestnet = prefs.getBool('binance_testnet') ?? false;
+
+    if (apiKey == null || apiSecret == null || apiKey.isEmpty || apiSecret.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please configure Binance API keys in Settings first')),
+        );
+      }
+      return;
+    }
+
+    final exchangeService = ExchangeService();
+    exchangeService.initBinance(
+      apiKey: apiKey,
+      apiSecret: apiSecret,
+      isTestnet: isTestnet,
+    );
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          final amountController = TextEditingController();
+          return AlertDialog(
+            title: Text('$side ${crypto.symbol.toUpperCase()}'),
+            content: TextField(
+              controller: amountController,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                hintText: 'Enter quantity to trade',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountController.text);
+                  if (amount == null || amount <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid amount')),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(context);
+                  try {
+                    if (side == 'BUY') {
+                      await exchangeService.placeBuyOrder(
+                        symbol: '${crypto.symbol.toUpperCase()}USDT',
+                        amount: amount,
+                        price: crypto.currentPrice,
+                      );
+                    } else {
+                      await exchangeService.placeSellOrder(
+                        symbol: '${crypto.symbol.toUpperCase()}USDT',
+                        quantity: amount,
+                      );
+                    }
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Successfully placed $side order for $amount ${crypto.symbol.toUpperCase()}')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Trade failed: ${e.toString()}')),
+                      );
+                    }
+                  }
+                },
+                child: Text(side),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 }
