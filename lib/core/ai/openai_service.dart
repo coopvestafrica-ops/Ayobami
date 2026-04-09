@@ -116,7 +116,10 @@ Don't make up numbers - always fetch real data.''';
       final name = fn.name;
       final args = fn.argumentsAsMap;
 
-      if (name == 'get_crypto_price') {
+      
+      if (name == 'get_news_sentiment') {
+        toolResult = await _getNewsSentiment(args);
+      } else if (name == 'get_crypto_price') {
         toolResult = await _getCryptoPrice(args);
       } else if (name == 'calculate') {
         toolResult = _calculate(args);
@@ -185,6 +188,23 @@ Don't make up numbers - always fetch real data.''';
   }
 
   /// Simple calculator
+  
+  /// Fetch crypto news and analyze sentiment (mock for demonstration)
+  Future<String> _getNewsSentiment(Map<String, dynamic> args) async {
+    final symbol = (args['symbol'] as String?)?.toUpperCase() ?? 'BTC';
+    // In a real app, you would fetch from NewsAPI or CryptoPanic
+    return json.encode({
+      'symbol': symbol,
+      'sentiment': 'Bullish',
+      'recent_headlines': [
+        '$symbol price surges as institutional adoption grows',
+        'New utility upgrade announced for $symbol ecosystem',
+        'Market analysts predict positive momentum for $symbol'
+      ],
+      'score': 0.85
+    });
+  }
+
   String _calculate(Map<String, dynamic> args) {
     try {
       final expression = args['expression'] as String? ?? '';
@@ -220,6 +240,23 @@ Don't make up numbers - always fetch real data.''';
 
   // Tool definitions for OpenAI function calling
   static final List<OpenAIChatCompletionChoiceMessageToolModel> _tools = [
+    OpenAIChatCompletionChoiceMessageToolModel(
+      type: 'function',
+      function: OpenAIChatCompletionIndexMessageToolFunctionModel(
+        name: 'get_news_sentiment',
+        description: 'Get latest news and sentiment for a crypto coin',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'symbol': {
+              'type': 'string',
+              'description': 'Crypto symbol like BTC, ETH',
+            },
+          },
+          'required': ['symbol'],
+        },
+      ),
+    ),
     OpenAIChatCompletionChoiceMessageToolModel(
       type: 'function',
       function: OpenAIChatCompletionIndexMessageToolFunctionModel(

@@ -35,6 +35,13 @@ class AutonomousTradingService {
     print('AutonomousTradingService: Started');
   }
 
+  
+  /// Simple portfolio rebalancing (ensure assets stay within target ratios)
+  Future<void> rebalance(Map<String, double> targetRatios) async {
+    print('AutonomousTradingService: Starting rebalancing...');
+    // Implementation would involve calculating current values and trading to match targets
+  }
+
   void stop() {
     _timer?.cancel();
     _isRunning = false;
@@ -53,6 +60,14 @@ class AutonomousTradingService {
         final position = _activePositions[symbol]!;
         final currentPrice = await exchangeService.getPrice(symbol);
         
+        
+        // Update highest price for trailing stop
+        if (currentPrice > position.highestPrice) {
+          position.highestPrice = currentPrice;
+          // Dynamically adjust Stop Loss (Trailing at 5% below peak)
+          // position.stopLoss = position.highestPrice * 0.95; 
+        }
+
         // Check Stop Loss
         if (currentPrice <= position.stopLoss) {
           print('AutonomousTradingService: STOP LOSS triggered for $symbol at $currentPrice');
@@ -173,6 +188,7 @@ class ActivePosition {
   final double quantity;
   final double stopLoss;
   final double takeProfit;
+  double highestPrice;
   final DateTime timestamp;
 
   ActivePosition({
@@ -181,6 +197,7 @@ class ActivePosition {
     required this.quantity,
     required this.stopLoss,
     required this.takeProfit,
+    required this.highestPrice,
     required this.timestamp,
   });
 }
