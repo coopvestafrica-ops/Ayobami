@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:openai/openai.dart';
+import 'package:dart_openai/dart_openai.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,23 +52,24 @@ Don't make up numbers - always fetch real data.''';
     }
 
     try {
-      final openai = OpenAI(apiKey: apiKey!);
+      OpenAI.apiKey = apiKey!;
+      final openai = OpenAI.instance;
 
       // Build messages with history
-      final messages = <OpenAIChatMessage>[
-        OpenAIChatMessage(
+      final messages = <OpenAIChatCompletionChoiceMessageModel>[
+        OpenAIChatCompletionChoiceMessageModel(
           role: OpenAIChatMessageRole.system,
-          content: _systemPrompt,
+          content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(_systemPrompt)],
         ),
-        ...chatHistory.map((m) => OpenAIChatMessage(
+        ...chatHistory.map((m) => OpenAIChatCompletionChoiceMessageModel(
           role: m.isUser
               ? OpenAIChatMessageRole.user
               : OpenAIChatMessageRole.assistant,
-          content: m.content,
+          content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(m.content)],
         )),
-        OpenAIChatMessage(
+        OpenAIChatCompletionChoiceMessageModel(
           role: OpenAIChatMessageRole.user,
-          content: message,
+          content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(message)],
         ),
       ];
 
@@ -77,7 +78,7 @@ Don't make up numbers - always fetch real data.''';
         model: _model,
         messages: messages,
         tools: _tools,
-        toolChoice: 'auto',
+        toolChoice: OpenAIChatCompletionHelper.toolChoiceAuto,
         temperature: 0.7,
       );
 
@@ -85,6 +86,8 @@ Don't make up numbers - always fetch real data.''';
 
       // Check if AI used a tool
       if (choice.message.toolCalls != null && choice.message.toolCalls!.isNotEmpty) {
+        // Add assistant's tool call message to history
+        messages.add(choice.message);
         return await _handleToolCall(openai, choice.message.toolCalls!, messages);
       }
 
@@ -103,15 +106,15 @@ Don't make up numbers - always fetch real data.''';
   /// Handle tool calls from AI
   Future<AIResponse> _handleToolCall(
     OpenAI openai,
-    List<OpenAIChatToolCall> toolCalls,
-    List<OpenAIChatMessage> messages,
+    List<OpenAIChatCompletionMessageToolCallModel> toolCalls,
+    List<OpenAIChatCompletionChoiceMessageModel> messages,
   ) async {
     String? toolResult;
 
     for (final toolCall in toolCalls) {
       final fn = toolCall.function;
       final name = fn.name;
-      final args = fn.arguments;
+      final args = fn.argumentsAsMap;
 
       if (name == 'get_crypto_price') {
         toolResult = await _getCryptoPrice(args);
@@ -128,9 +131,9 @@ Don't make up numbers - always fetch real data.''';
     }
 
     // Add tool result to messages and get final response
-    messages.add(OpenAIChatMessage(
+    messages.add(OpenAIChatCompletionChoiceMessageModel(
       role: OpenAIChatMessageRole.tool,
-      content: toolResult,
+      content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(toolResult)],
       toolCallId: toolCalls.first.id,
     ));
 
@@ -216,11 +219,10 @@ Don't make up numbers - always fetch real data.''';
   }
 
   // Tool definitions for OpenAI function calling
-  static final List<OpenAIChatTool> _tools = [
-    OpenAIChatTool(
-      functionName: 'get_crypto_price',
-      description: 'Get the current price of a cryptocurrency from Binance',
-      parameters: OpenAIChatFunctionParameters(
+  static final List<OpenAIChatCompletionChoiceMessageToolModel> _tools = [
+    OpenAIChatCompletionChoiceMessageToolModel(
+      type: 'function',
+      function: OpenAIChatCompletionIndexMessageToolFunctionModel(
         name: 'get_crypto_price',
         description: 'Get live crypto price from Binance',
         parameters: {
@@ -233,13 +235,11 @@ Don't make up numbers - always fetch real data.''';
             },
           },
         },
-        required: [],
       ),
     ),
-    OpenAIChatTool(
-      functionName: 'calculate',
-      description: 'Perform a calculation',
-      parameters: OpenAIChatFunctionParameters(
+    OpenAIChatCompletionChoiceMessageToolModel(
+      type: 'function',
+      function: OpenAIChatCompletionIndexMessageToolFunctionModel(
         name: 'calculate',
         description: 'Evaluate a mathematical expression',
         parameters: {
@@ -250,8 +250,8 @@ Don't make up numbers - always fetch real data.''';
               'description': 'Math expression like 100 + 50',
             },
           },
+          'required': ['expression'],
         },
-        required: ['expression'],
       ),
     ),
   ];
