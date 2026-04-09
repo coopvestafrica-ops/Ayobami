@@ -38,6 +38,11 @@ abstract class LocalDataSource {
   Future<AppSettings> getSettings();
   Future<void> saveSettings(AppSettings settings);
   
+    // Trading Positions
+  Future<List<Map<String, dynamic>>> getActivePositions();
+  Future<void> savePosition(Map<String, dynamic> position);
+  Future<void> deletePosition(String symbol);
+
   // Cache
   Future<void> cacheCryptoData(String data);
   Future<String?> getCachedCryptoData();
@@ -303,4 +308,23 @@ class LocalDataSourceImpl implements LocalDataSource {
     }
     return null;
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getActivePositions() async {
+    final db = await databaseHelper.database;
+    return await db.query('trading_positions');
+  }
+
+  @override
+  Future<void> savePosition(Map<String, dynamic> position) async {
+    final db = await databaseHelper.database;
+    await db.insert('trading_positions', position, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<void> deletePosition(String symbol) async {
+    final db = await databaseHelper.database;
+    await db.delete('trading_positions', where: 'symbol = ?', whereArgs: [symbol]);
+  }
+
 }

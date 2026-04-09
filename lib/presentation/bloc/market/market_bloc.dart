@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:ayobami/core/services/binance_websocket_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/domain/usecases/market/market_use_cases.dart';
@@ -7,10 +9,13 @@ import 'market_state.dart';
 class MarketBloc extends Bloc<MarketEvent, MarketState> {
   final GetMarketData getMarketData;
   final GetForexRates? getForexRates;
+  final BinanceWebSocketService? wsService;
+  StreamSubscription? _wsSubscription;
   
   MarketBloc({
     required this.getMarketData,
     this.getForexRates,
+    this.wsService,
   }) : super(const MarketState()) {
     on<LoadMarketDataEvent>(_onLoadMarketData);
     on<RefreshMarketDataEvent>(_onRefreshMarketData);
@@ -46,6 +51,17 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
       
       emit(state.copyWith(
         status: MarketStatus.success,
+
+      // Connect WebSockets for real-time updates
+      if (wsService != null) {
+        final symbols = marketData.cryptos.map((c) => '${c.symbol.toUpperCase()}USDT').toList();
+        wsService!.connect(symbols);
+        _wsSubscription?.cancel();
+        _wsSubscription = wsService!.stream.listen((data) {
+          _handleWsPriceUpdate(data, emit);
+        });
+      }
+
         cryptos: marketData.cryptos,
         selectedCrypto: selected,
       ));
@@ -100,4 +116,30 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
   ) {
     emit(state.copyWith(filter: event.filter));
   }
+
+  void _handleWsPriceUpdate(dynamic data, Emitter<MarketState> emit) {
+    try {
+      final json = data is String ? jsonDecode(data) : data;
+      final ticker = json['data'];
+      final symbol = ticker['s'].toString().replaceAll('USDT', '').toLowerCase();
+      final newPrice = double.tryParse(ticker['c'].toString()) ?? 0.0;
+      
+      final updatedCryptos = state.cryptos.map((c) {
+        if (c.symbol.toLowerCase() == symbol) {
+          return c.copyWith(currentPrice: newPrice);
+        }
+        return c;
+      }).toList();
+      
+      emit(state.copyWith(cryptos: updatedCryptos));
+    } catch (_) {}
+  }
+
+  @override
+  Future<void> close() {
+    _wsSubscription?.cancel();
+    wsService?.disconnect();
+    return super.close();
+  }
+
 }

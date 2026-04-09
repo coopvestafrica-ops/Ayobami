@@ -70,6 +70,20 @@ class DatabaseHelper {
       )
     ''');
 
+    
+    // Trading Positions table
+    await db.execute('''
+      CREATE TABLE trading_positions (
+        symbol TEXT PRIMARY KEY,
+        entry_price REAL NOT NULL,
+        quantity REAL NOT NULL,
+        stop_loss REAL NOT NULL,
+        take_profit REAL NOT NULL,
+        highest_price REAL NOT NULL,
+        opened_at TEXT NOT NULL
+      )
+    ''');
+
     // Reminders table
     await db.execute('''
       CREATE TABLE ${AppConstants.remindersTable} (

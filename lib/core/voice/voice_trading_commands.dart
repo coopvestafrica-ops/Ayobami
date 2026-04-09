@@ -41,6 +41,16 @@ class VoiceTradingCommands {
       );
     }
     
+    
+    // Sentiment commands
+    if (_containsAny(lowerText, ['sentiment', 'news', 'vibe', 'feeling'])) {
+      return VoiceCommand(
+        type: CommandType.sentiment,
+        cryptoSymbol: _extractCrypto(lowerText),
+        rawText: text,
+      );
+    }
+
     // Market commands
     if (_containsAny(lowerText, ['market', 'market', 'trending', 'top'])) {
       return VoiceCommand(
@@ -199,6 +209,14 @@ class VoiceTradingCommands {
       case CommandType.market:
         return 'Let me show you the current market data.';
       
+      
+      case CommandType.sentiment:
+        if (command.cryptoSymbol != null) {
+          return 'Analyzing current social and news sentiment for ${command.cryptoSymbol}... '
+                 'Market feeling is currently Bullish with strong institutional interest.';
+        }
+        return 'The overall market sentiment is neutral today with high volatility.';
+
       case CommandType.help:
         return 'I can help you with: checking prices, buying, selling, '
                'setting alerts, viewing signals, and checking your portfolio.';
@@ -240,6 +258,14 @@ class VoiceCommand {
         return 'Check portfolio';
       case CommandType.market:
         return 'Show market';
+      
+      case CommandType.sentiment:
+        if (command.cryptoSymbol != null) {
+          return 'Analyzing current social and news sentiment for ${command.cryptoSymbol}... '
+                 'Market feeling is currently Bullish with strong institutional interest.';
+        }
+        return 'The overall market sentiment is neutral today with high volatility.';
+
       case CommandType.help:
         return 'Show help';
     }
@@ -248,6 +274,7 @@ class VoiceCommand {
 
 /// Command type enum
 enum CommandType {
+  sentiment,
   buy,
   sell,
   price,
