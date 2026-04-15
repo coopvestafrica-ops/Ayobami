@@ -14,14 +14,32 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required this.getSettings,
     required this.saveSettings,
   }) : super(SettingsInitial()) {
-    on<LoadSettingsEvent>((event, emit) async {
-      emit(SettingsLoading());
-      try {
-        final settings = await getSettings();
-        emit(SettingsLoaded(settings: settings));
-      } catch (e) {
-        emit(SettingsError(message: e.toString()));
-      }
-    });
+    on<LoadSettingsEvent>(_onLoadSettings);
+    on<SaveSettingsEvent>(_onSaveSettings);
+  }
+
+  Future<void> _onLoadSettings(
+    LoadSettingsEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(SettingsLoading());
+    try {
+      final settings = await getSettings();
+      emit(SettingsLoaded(settings: settings));
+    } catch (e) {
+      emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onSaveSettings(
+    SaveSettingsEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      await saveSettings(event.settings);
+      emit(SettingsLoaded(settings: event.settings));
+    } catch (e) {
+      emit(SettingsError(message: e.toString()));
+    }
   }
 }

@@ -53,20 +53,23 @@ class _MainPageState extends State<MainPage> {
           const MarketPage(),
           BlocBuilder<MarketBloc, MarketState>(
             builder: (context, state) {
-              final cryptos = state.cryptoData ?? [];
-              return TradingSignalsPage(cryptos: cryptos);
+              return TradingSignalsPage(cryptos: state.cryptos);
             },
           ),
           BlocBuilder<PortfolioBloc, PortfolioState>(
             builder: (context, state) {
-              final marketPrices = state.portfolio ?? [];
-              return PortfolioPage(marketPrices: marketPrices);
+              // PortfolioPage expects List<CryptoCurrency> for market prices
+              // We can get this from MarketBloc
+              return BlocBuilder<MarketBloc, MarketState>(
+                builder: (context, marketState) {
+                  return PortfolioPage(marketPrices: marketState.cryptos);
+                },
+              );
             },
           ),
           BlocBuilder<MarketBloc, MarketState>(
             builder: (context, state) {
-              final cryptos = state.cryptoData ?? [];
-              return PriceAlertsPage(cryptos: cryptos);
+              return PriceAlertsPage(cryptos: state.cryptos);
             },
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 
 class ExchangeSettingsPage extends StatefulWidget {
@@ -11,6 +12,7 @@ class ExchangeSettingsPage extends StatefulWidget {
 
 class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   final _formKey = GlobalKey<FormState>();
+  final _secureStorage = const FlutterSecureStorage();
   
   // Binance controllers
   final _binanceApiKey = TextEditingController();
@@ -59,16 +61,23 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final binanceApiKey = await _secureStorage.read(key: 'binance_api_key') ?? '';
+    final binanceApiSecret = await _secureStorage.read(key: 'binance_api_secret') ?? '';
+    final coinbaseApiKey = await _secureStorage.read(key: 'coinbase_api_key') ?? '';
+    final coinbaseApiSecret = await _secureStorage.read(key: 'coinbase_api_secret') ?? '';
+    final coinbasePassphrase = await _secureStorage.read(key: 'coinbase_passphrase') ?? '';
+    final openaiApiKey = await _secureStorage.read(key: 'openai_api_key') ?? '';
+
     setState(() {
-      _binanceApiKey.text = prefs.getString('binance_api_key') ?? '';
-      _binanceApiSecret.text = prefs.getString('binance_api_secret') ?? '';
+      _binanceApiKey.text = binanceApiKey;
+      _binanceApiSecret.text = binanceApiSecret;
       _binanceTestnet = prefs.getBool('binance_testnet') ?? false;
-      _coinbaseApiKey.text = prefs.getString('coinbase_api_key') ?? '';
-      _coinbaseApiSecret.text = prefs.getString('coinbase_api_secret') ?? '';
-      _coinbasePassphrase.text = prefs.getString('coinbase_passphrase') ?? '';
+      _coinbaseApiKey.text = coinbaseApiKey;
+      _coinbaseApiSecret.text = coinbaseApiSecret;
+      _coinbasePassphrase.text = coinbasePassphrase;
       _isBinanceConnected = _binanceApiKey.text.isNotEmpty;
       _isCoinbaseConnected = _coinbaseApiKey.text.isNotEmpty;
-      _openaiApiKey.text = prefs.getString('openai_api_key') ?? '';
+      _openaiApiKey.text = openaiApiKey;
       _isOpenAIConnected = _openaiApiKey.text.isNotEmpty;
       
       // Auto-Trade Settings
@@ -86,8 +95,8 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     setState(() => _isSaving = true);
     
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('binance_api_key', _binanceApiKey.text);
-    await prefs.setString('binance_api_secret', _binanceApiSecret.text);
+    await _secureStorage.write(key: 'binance_api_key', value: _binanceApiKey.text);
+    await _secureStorage.write(key: 'binance_api_secret', value: _binanceApiSecret.text);
     await prefs.setBool('binance_testnet', _binanceTestnet);
     
     setState(() {
@@ -107,10 +116,9 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     
     setState(() => _isSaving = true);
     
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('coinbase_api_key', _coinbaseApiKey.text);
-    await prefs.setString('coinbase_api_secret', _coinbaseApiSecret.text);
-    await prefs.setString('coinbase_passphrase', _coinbasePassphrase.text);
+    await _secureStorage.write(key: 'coinbase_api_key', value: _coinbaseApiKey.text);
+    await _secureStorage.write(key: 'coinbase_api_secret', value: _coinbaseApiSecret.text);
+    await _secureStorage.write(key: 'coinbase_passphrase', value: _coinbasePassphrase.text);
     
     setState(() {
       _isSaving = false;
@@ -145,8 +153,8 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
 
   Future<void> _clearBinanceSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('binance_api_key');
-    await prefs.remove('binance_api_secret');
+    await _secureStorage.delete(key: 'binance_api_key');
+    await _secureStorage.delete(key: 'binance_api_secret');
     await prefs.remove('binance_testnet');
     
     setState(() {
@@ -158,10 +166,9 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   }
 
   Future<void> _clearCoinbaseSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('coinbase_api_key');
-    await prefs.remove('coinbase_api_secret');
-    await prefs.remove('coinbase_passphrase');
+    await _secureStorage.delete(key: 'coinbase_api_key');
+    await _secureStorage.delete(key: 'coinbase_api_secret');
+    await _secureStorage.delete(key: 'coinbase_passphrase');
     
     setState(() {
       _coinbaseApiKey.clear();
@@ -176,8 +183,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
     
     setState(() => _isSaving = true);
     
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('openai_api_key', _openaiApiKey.text);
+    await _secureStorage.write(key: 'openai_api_key', value: _openaiApiKey.text);
     
     setState(() {
       _isSaving = false;
@@ -192,8 +198,7 @@ class _ExchangeSettingsPageState extends State<ExchangeSettingsPage> {
   }
 
   Future<void> _clearOpenAISettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('openai_api_key');
+    await _secureStorage.delete(key: 'openai_api_key');
     
     setState(() {
       _openaiApiKey.clear();

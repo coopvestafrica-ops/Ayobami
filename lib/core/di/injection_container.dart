@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ayobami/core/ai/openai_service.dart';
 import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/core/services/binance_api_service.dart';
@@ -117,25 +118,26 @@ Future<void> init() async {
   sl.registerLazySingleton(() => BinanceApiService());
   
   // Initialize Exchange Service with saved credentials
-  await _initializeExchangeService(sharedPreferences);
+  await _initializeExchangeService();
 }
 
 /// Initialize exchange service with saved API credentials
-Future<void> _initializeExchangeService(SharedPreferences sharedPreferences) async {
+Future<void> _initializeExchangeService() async {
   try {
+    const secureStorage = FlutterSecureStorage();
     final exchangeService = sl<ExchangeService>();
     
     // Initialize Binance if credentials are available
-    final binanceKey = sharedPreferences.getString('binance_api_key');
-    final binanceSecret = sharedPreferences.getString('binance_secret');
+    final binanceKey = await secureStorage.read(key: 'binance_api_key');
+    final binanceSecret = await secureStorage.read(key: 'binance_api_secret');
     if (binanceKey != null && binanceKey.isNotEmpty && binanceSecret != null && binanceSecret.isNotEmpty) {
       await exchangeService.initBinance(binanceKey, binanceSecret);
       print('ExchangeService: Binance initialized successfully');
     }
     
     // Initialize Coinbase if credentials are available
-    final coinbaseKey = sharedPreferences.getString('coinbase_api_key');
-    final coinbaseSecret = sharedPreferences.getString('coinbase_secret');
+    final coinbaseKey = await secureStorage.read(key: 'coinbase_api_key');
+    final coinbaseSecret = await secureStorage.read(key: 'coinbase_api_secret');
     if (coinbaseKey != null && coinbaseKey.isNotEmpty && coinbaseSecret != null && coinbaseSecret.isNotEmpty) {
       await exchangeService.initCoinbase(coinbaseKey, coinbaseSecret);
       print('ExchangeService: Coinbase initialized successfully');

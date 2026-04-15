@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ayobami/core/constants/app_constants.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/models/chat_message_model.dart';
@@ -53,6 +54,7 @@ abstract class LocalDataSource {
 class LocalDataSourceImpl implements LocalDataSource {
   final SharedPreferences sharedPreferences;
   final DatabaseHelper databaseHelper;
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   LocalDataSourceImpl({
     required this.sharedPreferences,
@@ -228,7 +230,7 @@ class LocalDataSourceImpl implements LocalDataSource {
     final notificationsEnabled = sharedPreferences.getBool('notifications_enabled') ?? true;
     final priceAlertsEnabled = sharedPreferences.getBool('price_alerts_enabled') ?? true;
     final language = sharedPreferences.getString('language') ?? 'en';
-    final openaiApiKey = sharedPreferences.getString('openai_api_key') ?? '';
+    final openaiApiKey = await secureStorage.read(key: 'openai_api_key') ?? '';
     
     // Auto-Trade Settings
     final autoTradeEnabled = sharedPreferences.getBool('auto_trade_enabled') ?? false;
@@ -263,7 +265,7 @@ class LocalDataSourceImpl implements LocalDataSource {
     await sharedPreferences.setBool('notifications_enabled', settings.notificationsEnabled);
     await sharedPreferences.setBool('price_alerts_enabled', settings.priceAlertsEnabled);
     await sharedPreferences.setString('language', settings.language);
-    await sharedPreferences.setString('openai_api_key', settings.openaiApiKey);
+    await secureStorage.write(key: 'openai_api_key', value: settings.openaiApiKey);
     
     // Auto-Trade Settings
     await sharedPreferences.setBool('auto_trade_enabled', settings.autoTradeEnabled);

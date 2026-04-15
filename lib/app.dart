@@ -22,13 +22,7 @@ class AyobamiApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => ChatBloc(
-            getChatHistory: sl(),
-            sendMessage: sl(),
-            saveUserMemory: sl(),
-            getUserMemory: sl(),
-            voiceController: voiceController,
-          )..add(const LoadChatHistoryEvent()),
+          create: (_) => sl<ChatBloc>()..add(const LoadChatHistoryEvent()),
         ),
         BlocProvider(
           create: (_) => sl<MarketBloc>()..add(const LoadMarketDataEvent()),

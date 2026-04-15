@@ -28,6 +28,12 @@ Don't make up numbers - always fetch real data.''';
 
   OpenAIService();
 
+  /// Initialize API key from storage
+  Future<void> initialize() async {
+    // In a real app, we'd load this from secure storage
+    // For now, we'll keep the setter but ensure it's called before use
+  }
+
   /// Set API key from settings
   void setApiKey(String key) {
     _apiKey = key;
@@ -39,7 +45,9 @@ Don't make up numbers - always fetch real data.''';
     String message, {
     List<ChatMessage> chatHistory = const [],
   }) async {
+    // Ensure API key is loaded if not already
     if (!isConfigured) {
+      // Try to load from settings if possible, but for now we rely on setApiKey being called
       return AIResponse(
         content: 'OpenAI API key not configured. Please add your API key in Settings.',
         type: MessageType.error,
