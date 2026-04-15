@@ -9,7 +9,7 @@ class ExchangeService {
   ExchangeType _activeExchange = ExchangeType.binance;
   
   /// Initialize with Binance credentials
-  void initBinance({
+  Future<void> initBinance({
     required String apiKey,
     required String apiSecret,
     bool isTestnet = false,
@@ -22,7 +22,7 @@ class ExchangeService {
   }
   
   /// Initialize with Coinbase credentials
-  void initCoinbase({
+  Future<void> initCoinbase({
     required String apiKey,
     required String apiSecret,
     required String passphrase,

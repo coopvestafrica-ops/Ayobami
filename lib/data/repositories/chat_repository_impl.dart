@@ -9,16 +9,28 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<List<ChatMessage>> getChatHistory() async {
-    return [];
+    final messages = await localDataSource.getChatHistory();
+    return messages.map((model) => ChatMessage(
+      id: model.id,
+      content: model.content,
+      isUser: model.isUser,
+      timestamp: model.timestamp,
+    )).toList();
   }
 
   @override
   Future<void> saveMessage(ChatMessage message) async {
-    // Implementation for saving message
+    final model = ChatMessageModel(
+      id: message.id,
+      content: message.content,
+      isUser: message.isUser,
+      timestamp: message.timestamp,
+    );
+    await localDataSource.saveMessage(model);
   }
 
   @override
   Future<void> clearChatHistory() async {
-    // Implementation for clearing chat history
+    await localDataSource.clearChatHistory();
   }
 }

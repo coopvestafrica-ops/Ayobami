@@ -7,7 +7,7 @@ import 'package:ayobami/presentation/bloc/chat/chat_event.dart';
 import 'package:ayobami/presentation/bloc/chat/chat_state.dart';
 import 'package:ayobami/presentation/widgets/chat_bubble.dart';
 import 'package:ayobami/presentation/widgets/voice_button.dart';
-import 'package:ayobami/presentation/pages/market_page.dart';
+import 'package:ayobami/presentation/pages/exchange_settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,21 +19,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late final ChatBloc _chatBloc;
   late final VoiceController _voiceController;
 
   @override
   void initState() {
     super.initState();
     _voiceController = di.sl<VoiceController>();
-    _chatBloc = ChatBloc(
-      getChatHistory: di.sl(),
-      sendMessage: di.sl(),
-      saveUserMemory: di.sl(),
-      getUserMemory: di.sl(),
-      voiceController: _voiceController,
-    );
-    _chatBloc.add(const LoadChatHistoryEvent());
     _initializeVoice();
   }
 
@@ -41,10 +32,10 @@ class _HomePageState extends State<HomePage> {
     await _voiceController.initialize();
   }
 
-  void _sendMessage() {
+  void _sendMessage(ChatBloc chatBloc) {
     final text = _messageController.text.trim();
     if (text.isNotEmpty) {
-      _chatBloc.add(SendMessageEvent(text));
+      chatBloc.add(SendMessageEvent(text));
       _messageController.clear();
       _scrollToBottom();
     }
@@ -62,154 +53,161 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _startListening() {
-    _chatBloc.add(const StartVoiceListeningEvent());
+  void _startListening(ChatBloc chatBloc) {
+    chatBloc.add(const StartVoiceListeningEvent());
   }
 
-  void _stopListening() {
-    _chatBloc.add(const StopVoiceListeningEvent());
+  void _stopListening(ChatBloc chatBloc) {
+    chatBloc.add(const StopVoiceListeningEvent());
   }
 
-  void _speakResponse(String text) {
-    _chatBloc.add(SpeakResponseEvent(text));
+  void _speakResponse(ChatBloc chatBloc, String text) {
+    chatBloc.add(SpeakResponseEvent(text));
   }
 
-  void _stopSpeaking() {
-    _chatBloc.add(const StopSpeakingEvent());
+  void _stopSpeaking(ChatBloc chatBloc) {
+    chatBloc.add(const StopSpeakingEvent());
+  }
+
+  void _navigateToSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ExchangeSettingsPage(),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _chatBloc.close();
     _voiceController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _chatBloc,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Ayobami'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                // Navigate to settings
-              },
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: BlocConsumer<ChatBloc, ChatState>(
-                listener: (context, state) {
-                  if (state.status == ChatStatus.success) {
-                    _scrollToBottom();
-                  }
-                },
-                builder: (context, state) {
-                  if (state.messages.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Say something or type a message...',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.messages.length,
-                    itemBuilder: (context, index) {
-                      final message = state.messages[index];
-                      return ChatBubble(
-                        message: message.content,
-                        isUser: message.isUser,
-                        onSpeak: message.isUser
-                            ? null
-                            : () => _speakResponse(message.content),
+    return BlocBuilder<ChatBloc, ChatState>(
+      builder: (context, state) {
+        final chatBloc = context.read<ChatBloc>();
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Ayobami'),
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: _navigateToSettings,
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: BlocConsumer<ChatBloc, ChatState>(
+                  listener: (context, state) {
+                    if (state.status == ChatStatus.success) {
+                      _scrollToBottom();
+                    }
+                  },
+                  builder: (context, state) {
+                    if (state.messages.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Say something or type a message...',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       );
-                    },
+                    }
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: state.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = state.messages[index];
+                        return ChatBubble(
+                          message: message.content,
+                          isUser: message.isUser,
+                          onSpeak: message.isUser
+                              ? null
+                              : () => _speakResponse(chatBloc, message.content),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              BlocBuilder<ChatBloc, ChatState>(
+                builder: (context, state) {
+                  return Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    child: Column(
+                      children: [
+                        if (state.voiceStatus == VoiceStatus.listening)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.mic, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Listening...'),
+                              ],
+                            ),
+                          ),
+                        if (state.isSpeaking)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.volume_up, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text('Speaking...'),
+                              ],
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _messageController,
+                                decoration: InputDecoration(
+                                  hintText: 'Type a message...',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onSubmitted: (_) => _sendMessage(chatBloc),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed: () => _sendMessage(chatBloc),
+                            ),
+                            VoiceButton(
+                              isListening: state.voiceStatus == VoiceStatus.listening,
+                              onPressed: state.voiceStatus == VoiceStatus.listening
+                                  ? () => _stopListening(chatBloc)
+                                  : () => _startListening(chatBloc),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
-            ),
-            BlocBuilder<ChatBloc, ChatState>(
-              builder: (context, state) {
-                return Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  child: Column(
-                    children: [
-                      if (state.voiceStatus == VoiceStatus.listening)
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.mic, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Listening...'),
-                            ],
-                          ),
-                        ),
-                      if (state.isSpeaking)
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.volume_up, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('Speaking...'),
-                            ],
-                          ),
-                        ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: InputDecoration(
-                                hintText: 'Type a message...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                              ),
-                              onSubmitted: (_) => _sendMessage(),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed: _sendMessage,
-                          ),
-                          VoiceButton(
-                            isListening: state.voiceStatus == VoiceStatus.listening,
-                            onPressed: state.voiceStatus == VoiceStatus.listening
-                                ? _stopListening
-                                : _startListening,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

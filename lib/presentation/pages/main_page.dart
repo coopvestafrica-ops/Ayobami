@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ayobami/core/di/injection_container.dart' as di;
+import 'package:ayobami/domain/entities/crypto_currency.dart';
+import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
+import 'package:ayobami/presentation/bloc/market/market_event.dart';
+import 'package:ayobami/presentation/bloc/market/market_state.dart';
+import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
+import 'package:ayobami/presentation/bloc/portfolio/portfolio_event.dart';
+import 'package:ayobami/presentation/bloc/portfolio/portfolio_state.dart';
 import 'package:ayobami/presentation/pages/home_page.dart';
 import 'package:ayobami/presentation/pages/market_page.dart';
 import 'package:ayobami/presentation/pages/trading_signals_page.dart';
@@ -17,6 +26,24 @@ class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // Load market data and portfolio data when app starts
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
+    final marketBloc = di.sl<MarketBloc>();
+    final portfolioBloc = di.sl<PortfolioBloc>();
+    
+    // Fetch market data
+    marketBloc.add(const GetMarketDataEvent());
+    
+    // Fetch portfolio data
+    portfolioBloc.add(const GetPortfolioEvent());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
@@ -24,9 +51,24 @@ class _MainPageState extends State<MainPage> {
         children: [
           const HomePage(),
           const MarketPage(),
-          const TradingSignalsPage(cryptos: []),
-          const PortfolioPage(marketPrices: []),
-          const PriceAlertsPage(cryptos: []),
+          BlocBuilder<MarketBloc, MarketState>(
+            builder: (context, state) {
+              final cryptos = state.cryptoData ?? [];
+              return TradingSignalsPage(cryptos: cryptos);
+            },
+          ),
+          BlocBuilder<PortfolioBloc, PortfolioState>(
+            builder: (context, state) {
+              final marketPrices = state.portfolio ?? [];
+              return PortfolioPage(marketPrices: marketPrices);
+            },
+          ),
+          BlocBuilder<MarketBloc, MarketState>(
+            builder: (context, state) {
+              final cryptos = state.cryptoData ?? [];
+              return PriceAlertsPage(cryptos: cryptos);
+            },
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -98,20 +140,7 @@ class _MainPageState extends State<MainPage> {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Exchange Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ExchangeSettingsPage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications_active),
+            leading: const Icon(Icons.notifications),
             title: const Text('Price Alerts'),
             onTap: () {
               Navigator.pop(context);
@@ -126,19 +155,45 @@ class _MainPageState extends State<MainPage> {
               setState(() => _currentIndex = 3);
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExchangeSettingsPage(),
+                ),
+              );
+            },
+          ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.info_outline),
+            leading: const Icon(Icons.info),
             title: const Text('About'),
             onTap: () {
               Navigator.pop(context);
-              showAboutDialog(
-                context: context,
-                applicationName: 'Ayobami',
-                applicationVersion: '1.0.0',
-                applicationLegalese: 'AI Trading Assistant',
-              );
+              _showAboutDialog();
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('About Ayobami'),
+        content: const Text(
+          'Ayobami is an AI-powered trading assistant that helps you make informed decisions in the crypto market.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),

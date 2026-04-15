@@ -53,6 +53,7 @@ Future<void> init() async {
     exchangeService: sl(),
     settingsRepository: sl(),
     signalGenerator: sl(),
+    localDataSource: sl(),
   ));
   
   // Repositories
@@ -114,4 +115,32 @@ Future<void> init() async {
 
   // Binance API Service - for real-time crypto data
   sl.registerLazySingleton(() => BinanceApiService());
+  
+  // Initialize Exchange Service with saved credentials
+  await _initializeExchangeService(sharedPreferences);
+}
+
+/// Initialize exchange service with saved API credentials
+Future<void> _initializeExchangeService(SharedPreferences sharedPreferences) async {
+  try {
+    final exchangeService = sl<ExchangeService>();
+    
+    // Initialize Binance if credentials are available
+    final binanceKey = sharedPreferences.getString('binance_api_key');
+    final binanceSecret = sharedPreferences.getString('binance_secret');
+    if (binanceKey != null && binanceKey.isNotEmpty && binanceSecret != null && binanceSecret.isNotEmpty) {
+      await exchangeService.initBinance(binanceKey, binanceSecret);
+      print('ExchangeService: Binance initialized successfully');
+    }
+    
+    // Initialize Coinbase if credentials are available
+    final coinbaseKey = sharedPreferences.getString('coinbase_api_key');
+    final coinbaseSecret = sharedPreferences.getString('coinbase_secret');
+    if (coinbaseKey != null && coinbaseKey.isNotEmpty && coinbaseSecret != null && coinbaseSecret.isNotEmpty) {
+      await exchangeService.initCoinbase(coinbaseKey, coinbaseSecret);
+      print('ExchangeService: Coinbase initialized successfully');
+    }
+  } catch (e) {
+    print('ExchangeService initialization error: $e');
+  }
 }

@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:dart_openai/dart_openai.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// OpenAI Service with function calling for real crypto data
 class OpenAIService {
@@ -11,6 +11,8 @@ class OpenAIService {
   static const String _model = 'gpt-4o-mini';
 
   String? _loadApiKey() {
+    // Load API key from SharedPreferences
+    // In a real app, this should be injected, but for now we'll use a static approach
     return '';
   }
 
@@ -33,6 +35,11 @@ Don't make up numbers - always fetch real data.''';
 
   OpenAIService();
 
+  /// Set API key from settings (called during initialization)
+  void setApiKey(String key) {
+    _apiKey = key;
+  }
+
   /// Send message and get AI response with tool calling
   Future<AIResponse> sendMessage(
     String message, {
@@ -47,6 +54,7 @@ Don't make up numbers - always fetch real data.''';
 
     try {
       OpenAI.apiKey = apiKey!;
+      final openai = OpenAI.instance;
       final openai = OpenAI.instance;
 
       // Build messages with history
