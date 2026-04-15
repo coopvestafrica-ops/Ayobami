@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:ayobami/core/services/binance_websocket_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ayobami/domain/entities/crypto_currency.dart';
@@ -49,9 +50,6 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
         );
       }
       
-      emit(state.copyWith(
-        status: MarketStatus.success,
-
       // Connect WebSockets for real-time updates
       if (wsService != null) {
         final symbols = marketData.cryptos.map((c) => '${c.symbol.toUpperCase()}USDT').toList();
@@ -62,6 +60,8 @@ class MarketBloc extends Bloc<MarketEvent, MarketState> {
         });
       }
 
+      emit(state.copyWith(
+        status: MarketStatus.success,
         cryptos: marketData.cryptos,
         selectedCrypto: selected,
       ));

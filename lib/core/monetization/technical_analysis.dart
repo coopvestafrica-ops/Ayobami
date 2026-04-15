@@ -1,4 +1,7 @@
 /// Premium Technical Analysis Indicators
+import 'dart:math';
+
+/// Premium Technical Analysis Indicators
 class PremiumTechnicalAnalysis {
   /// Calculate MACD (Moving Average Convergence Divergence)
   MACDIndicator calculateMACD({
@@ -28,7 +31,7 @@ class PremiumTechnicalAnalysis {
     final variance = prices
         .map((p) => (p - sma) * (p - sma))
         .reduce((a, b) => a + b) / prices.length;
-    final stdDev = (variance).sqrt();
+    final stdDev = sqrt(variance);
     
     return BollingerBands(
       upper: sma + (stdDev * stdDevs),

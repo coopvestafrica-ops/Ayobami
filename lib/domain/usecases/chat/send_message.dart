@@ -104,18 +104,18 @@ class SendMessage {
     return null;
   }
 
-  ChatMessageType _mapMessageType(MessageType type) {
+  MessageType _mapMessageType(MessageType type) {
     switch (type) {
       case MessageType.marketData:
-        return ChatMessageType.marketData;
+        return MessageType.marketData;
       case MessageType.tradingSignal:
-        return ChatMessageType.tradingSignal;
+        return MessageType.tradingSignal;
       case MessageType.calculator:
-        return ChatMessageType.calculator;
+        return MessageType.calculator;
       case MessageType.reminder:
-        return ChatMessageType.reminder;
+        return MessageType.reminder;
       default:
-        return ChatMessageType.text;
+        return MessageType.text;
     }
   }
 }

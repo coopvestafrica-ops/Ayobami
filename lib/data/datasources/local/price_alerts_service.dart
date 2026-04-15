@@ -130,10 +130,14 @@ class PriceAlertsService {
     for (final alert in alerts) {
       if (!alert.isEnabled || alert.triggered) continue;
       
-      final priceData = prices.firstWhere(
-        (p) => p['id'] == alert.cryptoId,
-        orElse: () => null,
-      );
+      Map<String, dynamic>? priceData;
+      try {
+        priceData = prices.firstWhere(
+          (p) => p['id'] == alert.cryptoId,
+        );
+      } catch (_) {
+        priceData = null;
+      }
       
       if (priceData == null) continue;
       

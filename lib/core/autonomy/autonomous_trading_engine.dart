@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:ayobami/core/monetization/technical_analysis.dart';
 import 'package:ayobami/core/monetization/ai_pattern_recognition.dart';
 
@@ -107,7 +108,7 @@ class AutonomousTradingEngine {
     if (prices.length < 2) return 0;
     final mean = prices.reduce((a, b) => a + b) / prices.length;
     final variance = prices.map((p) => (p - mean) * (p - mean)).reduce((a, b) => a + b) / prices.length;
-    return (variance.sqrt() / mean) * 100;
+    return (sqrt(variance) / mean) * 100;
   }
   
   double _calculateATR(List<double> prices) {

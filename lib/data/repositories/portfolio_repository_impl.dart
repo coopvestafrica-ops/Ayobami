@@ -29,23 +29,23 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<dynamic>> getPriceAlerts() async => [];
+  Future<List<PriceAlert>> getPriceAlerts() async => [];
 
   @override
-  Future<void> addPriceAlert(dynamic alert) async {}
+  Future<void> addPriceAlert(PriceAlert alert) async {}
 
   @override
   Future<void> removePriceAlert(String id) async {}
 
   @override
-  Future<List<dynamic>> getReminders() async => [];
+  Future<List<Reminder>> getReminders() async => [];
 
   @override
-  Future<void> addReminder(dynamic reminder) async {}
+  Future<void> addReminder(Reminder reminder) async {}
 
   @override
   Future<void> removeReminder(String id) async {}
 
   @override
-  Future<void> updateReminder(dynamic reminder) async {}
+  Future<void> updateReminder(Reminder reminder) async {}
 }

@@ -3,7 +3,7 @@ class SocialTradingHub {
   /// Get global leaderboard
   Future<List<TraderRanking>> getLeaderboard({
     required String period, // 'day', 'week', 'month', 'all'
-    required int limit = 50,
+    int limit = 50,
   }) async {
     return [
       TraderRanking(

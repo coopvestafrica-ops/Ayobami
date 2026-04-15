@@ -144,7 +144,7 @@ class _HomePageState extends State<HomePage> {
               builder: (context, state) {
                 return Container(
                   padding: const EdgeInsets.all(8),
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   child: Column(
                     children: [
                       if (state.voiceStatus == VoiceStatus.listening)

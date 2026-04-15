@@ -267,7 +267,7 @@ class RiskRewardAnalyzer {
     return AnalyzeRiskReward(
       potentialRewardPercent: potentialReward,
       potentialRiskPercent: potentialRisk,
-      rewardRiskRatio: rewardRiskRatio,
+      rewardRiskRatio: rewardRiskRatio.toDouble(),
       recommendation: recommendation,
     );
   }

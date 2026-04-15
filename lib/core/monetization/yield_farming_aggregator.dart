@@ -1,4 +1,7 @@
 /// Yield Farming Aggregator - Track best APYs across protocols
+import 'dart:math';
+
+/// Yield Farming Aggregator - Track best APYs across protocols
 class YieldFarmingAggregator {
   /// Fetch best yield opportunities
   Future<List<YieldOpportunity>> getBestYields({
@@ -36,7 +39,7 @@ class YieldFarmingAggregator {
     required int daysInvested,
   }) {
     final dailyRate = apy / 365 / 100;
-    return principalAmount * ((1 + dailyRate) ^ daysInvested) - principalAmount;
+    return principalAmount * pow(1 + dailyRate, daysInvested) - principalAmount;
   }
 }
 

@@ -260,8 +260,8 @@ class VoiceCommand {
         return 'Show market';
       
       case CommandType.sentiment:
-        if (command.cryptoSymbol != null) {
-          return 'Analyzing current social and news sentiment for ${command.cryptoSymbol}... '
+        if (cryptoSymbol != null) {
+          return 'Analyzing current social and news sentiment for $cryptoSymbol... '
                  'Market feeling is currently Bullish with strong institutional interest.';
         }
         return 'The overall market sentiment is neutral today with high volatility.';

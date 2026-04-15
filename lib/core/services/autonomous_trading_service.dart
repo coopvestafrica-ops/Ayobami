@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 import 'package:ayobami/domain/entities/app_settings.dart';
+import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/domain/repositories/settings_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AutonomousTradingService {
   final ExchangeService exchangeService;
@@ -161,6 +161,7 @@ class AutonomousTradingService {
       quantity: quantity,
       stopLoss: stopLoss,
       takeProfit: takeProfit,
+      highestPrice: signal.price,
       timestamp: DateTime.now(),
     );
     

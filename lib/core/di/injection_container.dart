@@ -21,6 +21,7 @@ import 'package:ayobami/domain/usecases/chat/send_message.dart';
 import 'package:ayobami/domain/usecases/market/market_use_cases.dart';
 import 'package:ayobami/domain/usecases/portfolio/portfolio_use_cases.dart';
 import 'package:ayobami/domain/usecases/settings/settings_use_cases.dart';
+import 'package:ayobami/domain/usecases/settings/user_memory_use_cases.dart';
 import 'package:ayobami/presentation/bloc/chat/chat_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';

@@ -9,6 +9,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   double _speechRate = 0.5;
   double _pitch = 1.0;
   double _volume = 1.0;
+  bool _isSpeaking = false;
 
   @override
   Future<void> initialize() async {
@@ -20,16 +21,23 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       await _flutterTts.setPitch(_pitch);
       await _flutterTts.setVolume(_volume);
 
-      // Handle completion
+      // Handle handlers
+      _flutterTts.setStartHandler(() {
+        _isSpeaking = true;
+      });
+
       _flutterTts.setCompletionHandler(() {
+        _isSpeaking = false;
         debugPrint('TTS completed');
       });
 
       _flutterTts.setCancelHandler(() {
+        _isSpeaking = false;
         debugPrint('TTS cancelled');
       });
 
       _flutterTts.setErrorHandler((error) {
+        _isSpeaking = false;
         debugPrint('TTS error: $error');
       });
 
@@ -56,6 +64,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   @override
   Future<void> stop() async {
     await _flutterTts.stop();
+    _isSpeaking = false;
   }
 
   @override
@@ -77,7 +86,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   }
 
   @override
-  bool get isSpeaking => _flutterTts.isSpeaking ?? false;
+  bool get isSpeaking => _isSpeaking;
 
   @override
   Future<void> dispose() async {

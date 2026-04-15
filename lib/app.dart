@@ -8,9 +8,7 @@ import 'package:ayobami/presentation/bloc/chat/chat_event.dart';
 import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_event.dart';
 import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
-import 'package:ayobami/presentation/bloc/portfolio/portfolio_event.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_bloc.dart';
-import 'package:ayobami/presentation/bloc/settings/settings_event.dart';
 import 'package:ayobami/presentation/pages/home_page.dart';
 import 'package:ayobami/presentation/pages/main_page.dart';
 
@@ -49,7 +47,7 @@ class AyobamiApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: (state is SettingsLoaded && state.settings.isDarkMode) ? ThemeMode.dark : ThemeMode.light,
             home: const MainPage(),
           );
         },
