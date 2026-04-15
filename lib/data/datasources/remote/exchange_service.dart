@@ -13,7 +13,7 @@ class ExchangeService {
     required String apiKey,
     required String apiSecret,
     bool isTestnet = false,
-  }) {
+  }) async {
     _binance = BinanceApiService(
       apiKey: apiKey,
       apiSecret: apiSecret,
@@ -26,7 +26,7 @@ class ExchangeService {
     required String apiKey,
     required String apiSecret,
     required String passphrase,
-  }) {
+  }) async {
     _coinbase = CoinbaseApiService(
       apiKey: apiKey,
       apiSecret: apiSecret,
@@ -58,13 +58,13 @@ class ExchangeService {
   
   /// Get price from active exchange
   Future<double> getPrice(String symbol) async {
-    // Convert to exchange format (e.g., BTCUSDT -> BTC/USDT)
-    final pair = _convertSymbol(symbol);
+    // Convert to exchange format (e.g., BTC-USD -> BTCUSDT)
+    final pair = _convertSymbol(symbol, toExchange: true);
     
     if (_binance != null && _activeExchange == ExchangeType.binance) {
       return await _binance!.getPrice(pair);
     } else if (_coinbase != null && _activeExchange == ExchangeType.coinbase) {
-      return await _coinbase!.getSpotPrice(pair.split('-')[0]);
+      return await _coinbase!.getSpotPrice(symbol.split('-')[0]);
     }
     
     throw Exception('Exchange not connected');
@@ -99,14 +99,32 @@ class ExchangeService {
     required double amount,
     required double price,
     OrderType orderType = OrderType.market,
+    double? stopPrice,
+    double? icebergQty,
   }) async {
     if (_activeExchange == ExchangeType.binance && _binance != null) {
       final pair = _convertSymbol(symbol, toExchange: true);
-      final order = await _binance!.placeMarketOrder(
-        symbol: pair,
-        side: 'BUY',
-        quantity: amount,
-      );
+      
+      BinanceOrder order;
+      if (orderType == OrderType.limit) {
+        order = await _binance!.placeLimitOrder(
+          symbol: pair,
+          side: 'BUY',
+          quantity: amount,
+          price: price,
+        );
+      } else if (orderType == OrderType.oco) {
+        // Binance OCO (Stop-Loss Limit + Take-Profit Limit)
+        // Simplified implementation: using stopPrice as trigger
+        throw UnimplementedError('Binance OCO order implementation requires separate API call');
+      } else {
+        order = await _binance!.placeMarketOrder(
+          symbol: pair,
+          side: 'BUY',
+          quantity: amount,
+        );
+      }
+
       return ExchangeOrder(
         id: order.orderId.toString(),
         symbol: order.symbol,
@@ -117,6 +135,7 @@ class ExchangeService {
         filled: order.executedQty,
       );
     } else if (_activeExchange == ExchangeType.coinbase && _coinbase != null) {
+      // Coinbase Pro/Exchange Advanced Order Logic
       final order = await _coinbase!.placeBuyOrder(
         currency: symbol,
         amount: amount,
@@ -139,15 +158,29 @@ class ExchangeService {
   Future<ExchangeOrder> placeSellOrder({
     required String symbol,
     required double quantity,
+    required double price,
     OrderType orderType = OrderType.market,
+    double? stopPrice,
   }) async {
     if (_activeExchange == ExchangeType.binance && _binance != null) {
       final pair = _convertSymbol(symbol, toExchange: true);
-      final order = await _binance!.placeMarketOrder(
-        symbol: pair,
-        side: 'SELL',
-        quantity: quantity,
-      );
+      
+      BinanceOrder order;
+      if (orderType == OrderType.limit) {
+        order = await _binance!.placeLimitOrder(
+          symbol: pair,
+          side: 'SELL',
+          quantity: quantity,
+          price: price,
+        );
+      } else {
+        order = await _binance!.placeMarketOrder(
+          symbol: pair,
+          side: 'SELL',
+          quantity: quantity,
+        );
+      }
+
       return ExchangeOrder(
         id: order.orderId.toString(),
         symbol: order.symbol,
@@ -178,11 +211,9 @@ class ExchangeService {
   
   /// Convert symbol between formats
   String _convertSymbol(String symbol, {bool toExchange = false}) {
-    // User format: BTC-USD -> Exchange format: BTCUSDT
     if (toExchange) {
       return symbol.replaceAll('-', '').replaceAll('/', '');
     }
-    // Exchange format: BTCUSDT -> User format: BTC-USD
     return symbol.replaceAll('USDT', '-USD').replaceAll('/', '-');
   }
   
@@ -198,13 +229,14 @@ class ExchangeService {
 enum ExchangeType {
   binance,
   coinbase,
-  // Add more exchanges here
 }
 
 /// Order type enum
 enum OrderType {
   market,
   limit,
+  oco,
+  iceberg,
 }
 
 /// Balance representation
