@@ -231,6 +231,7 @@ class LocalDataSourceImpl implements LocalDataSource {
     final priceAlertsEnabled = sharedPreferences.getBool('price_alerts_enabled') ?? true;
     final language = sharedPreferences.getString('language') ?? 'en';
     final openaiApiKey = await secureStorage.read(key: 'openai_api_key') ?? '';
+    final hasCompletedOnboarding = sharedPreferences.getBool('has_completed_onboarding') ?? false;
     
     // Auto-Trade Settings
     final autoTradeEnabled = sharedPreferences.getBool('auto_trade_enabled') ?? false;
@@ -248,6 +249,7 @@ class LocalDataSourceImpl implements LocalDataSource {
       priceAlertsEnabled: priceAlertsEnabled,
       language: language,
       openaiApiKey: openaiApiKey,
+      hasCompletedOnboarding: hasCompletedOnboarding,
       autoTradeEnabled: autoTradeEnabled,
       maxPositionSize: maxPositionSize,
       stopLossPercent: stopLossPercent,
@@ -266,6 +268,7 @@ class LocalDataSourceImpl implements LocalDataSource {
     await sharedPreferences.setBool('price_alerts_enabled', settings.priceAlertsEnabled);
     await sharedPreferences.setString('language', settings.language);
     await secureStorage.write(key: 'openai_api_key', value: settings.openaiApiKey);
+    await sharedPreferences.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
     
     // Auto-Trade Settings
     await sharedPreferences.setBool('auto_trade_enabled', settings.autoTradeEnabled);

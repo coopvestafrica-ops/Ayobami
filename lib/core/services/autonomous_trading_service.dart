@@ -5,12 +5,17 @@ import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 import 'package:ayobami/domain/entities/app_settings.dart';
 import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/domain/repositories/settings_repository.dart';
+import 'package:ayobami/core/services/notification_service.dart';
+import 'package:ayobami/data/datasources/local/price_alerts_service.dart';
+import 'package:workmanager/workmanager.dart';
 
 class AutonomousTradingService {
   final ExchangeService exchangeService;
   final SettingsRepository settingsRepository;
   final AITradingSignals signalGenerator;
   final LocalDataSource localDataSource;
+  final NotificationService notificationService;
+  final PriceAlertsService priceAlertsService = PriceAlertsService();
   
   bool _isRunning = false;
   Timer? _timer;
@@ -24,6 +29,7 @@ class AutonomousTradingService {
     required this.settingsRepository,
     required this.signalGenerator,
     required this.localDataSource,
+    required this.notificationService,
   });
 
   Future<void> start() async {
@@ -33,9 +39,10 @@ class AutonomousTradingService {
     // Restore active positions from persistent storage
     await _restorePositions();
     
-    // Run every 1 minute for risk management
+    // Run every 1 minute for risk management and price alerts
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       await _manageRisk();
+      await _checkPriceAlerts();
     });
     
     print('AutonomousTradingService: Started with ${_activePositions.length} restored positions');
@@ -125,6 +132,27 @@ class AutonomousTradingService {
     print('AutonomousTradingService: Stopped');
   }
 
+  /// Initialize background execution via Workmanager
+  Future<void> startBackgroundExecution(Function callbackDispatcher) async {
+    try {
+      await Workmanager().initialize(
+        callbackDispatcher,
+        isInDebugMode: true,
+      );
+      await Workmanager().registerPeriodicTask(
+        "ayobami_trading_task",
+        "ayobami_background_trading",
+        frequency: const Duration(minutes: 15), // Minimum frequency for Workmanager
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+        ),
+      );
+      print('AutonomousTradingService: Background execution scheduled');
+    } catch (e) {
+      print('AutonomousTradingService: Background execution error: $e');
+    }
+  }
+
   Future<void> _manageRisk() async {
     if (_activePositions.isEmpty) return;
 
@@ -175,9 +203,48 @@ class AutonomousTradingService {
       // Remove from persistent storage
       await localDataSource.deletePosition(symbol);
       
+      // Notify user
+      await notificationService.showNotification(
+        id: symbol.hashCode,
+        title: 'Trade Exited: $symbol',
+        body: 'Reason: $reason at price $price',
+      );
+      
       print('AutonomousTradingService: Exited $symbol due to $reason at $price');
     } catch (e) {
       print('AutonomousTradingService Exit Error for $symbol: $e');
+    }
+  }
+
+  Future<void> _checkPriceAlerts() async {
+    try {
+      final settings = await settingsRepository.getSettings();
+      if (!settings.priceAlertsEnabled) return;
+
+      // Fetch current prices for top symbols
+      // This is a simplified version, in a real app we'd fetch prices for all alert symbols
+      final symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT'];
+      final List<Map<String, dynamic>> prices = [];
+      
+      for (final symbol in symbols) {
+        final price = await exchangeService.getPrice(symbol);
+        prices.add({
+          'id': symbol.replaceAll('USDT', '').toLowerCase(), // Matching PriceAlert.cryptoId logic
+          'currentPrice': price,
+        });
+      }
+
+      final triggeredAlerts = await priceAlertsService.checkAlerts(prices);
+      
+      for (final alert in triggeredAlerts) {
+        await notificationService.showNotification(
+          id: alert.id.hashCode,
+          title: 'Price Alert: ${alert.symbol}',
+          body: 'Price reached ${alert.targetPrice} (${alert.condition.name})',
+        );
+      }
+    } catch (e) {
+      print('AutonomousTradingService: Error checking price alerts: $e');
     }
   }
 

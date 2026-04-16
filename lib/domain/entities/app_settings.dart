@@ -16,6 +16,9 @@ class AppSettings extends Equatable {
   final double stopLossPercent;
   final double takeProfitPercent;
   final bool executeStrongSignalsOnly;
+  
+  // Onboarding
+  final bool hasCompletedOnboarding;
 
   const AppSettings({
     this.isDarkMode = false,
@@ -31,6 +34,7 @@ class AppSettings extends Equatable {
     this.stopLossPercent = 5.0,
     this.takeProfitPercent = 10.0,
     this.executeStrongSignalsOnly = true,
+    this.hasCompletedOnboarding = false,
   });
   
   AppSettings copyWith({
@@ -47,6 +51,7 @@ class AppSettings extends Equatable {
     double? stopLossPercent,
     double? takeProfitPercent,
     bool? executeStrongSignalsOnly,
+    bool? hasCompletedOnboarding,
   }) {
     return AppSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -62,6 +67,7 @@ class AppSettings extends Equatable {
       stopLossPercent: stopLossPercent ?? this.stopLossPercent,
       takeProfitPercent: takeProfitPercent ?? this.takeProfitPercent,
       executeStrongSignalsOnly: executeStrongSignalsOnly ?? this.executeStrongSignalsOnly,
+      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
     );
   }
   
@@ -80,5 +86,6 @@ class AppSettings extends Equatable {
     stopLossPercent,
     takeProfitPercent,
     executeStrongSignalsOnly,
+    hasCompletedOnboarding,
   ];
 }

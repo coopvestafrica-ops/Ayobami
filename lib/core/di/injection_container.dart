@@ -28,6 +28,7 @@ import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_bloc.dart';
 import 'package:ayobami/core/voice/voice_controller.dart';
+import 'package:ayobami/core/services/notification_service.dart';
 
 final sl = GetIt.instance;
 
@@ -55,6 +56,7 @@ Future<void> init() async {
     settingsRepository: sl(),
     signalGenerator: sl(),
     localDataSource: sl(),
+    notificationService: sl(),
   ));
   
   // Repositories
@@ -113,6 +115,11 @@ Future<void> init() async {
 
   // Voice Controller
   sl.registerLazySingleton(() => VoiceController());
+
+  // Notification Service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  sl.registerLazySingleton(() => notificationService);
 
   // Binance API Service - for real-time crypto data
   sl.registerLazySingleton(() => BinanceApiService());

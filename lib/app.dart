@@ -11,6 +11,7 @@ import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
 import 'package:ayobami/presentation/bloc/settings/settings_bloc.dart';
 import 'package:ayobami/presentation/pages/home_page.dart';
 import 'package:ayobami/presentation/pages/main_page.dart';
+import 'package:ayobami/presentation/pages/onboarding_page.dart';
 
 class AyobamiApp extends StatelessWidget {
   const AyobamiApp({super.key});
@@ -42,7 +43,9 @@ class AyobamiApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: (state is SettingsLoaded && state.settings.isDarkMode) ? ThemeMode.dark : ThemeMode.light,
-            home: const MainPage(),
+            home: (state is SettingsLoaded && !state.settings.hasCompletedOnboarding)
+                ? const OnboardingPage()
+                : const MainPage(),
           );
         },
       ),
