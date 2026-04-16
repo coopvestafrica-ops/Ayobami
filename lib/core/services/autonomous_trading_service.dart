@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:ayobami/core/ai/trading_signals.dart';
+import 'package:ayobami/core/ai/trading_signals.dart' hide TradingSignal;
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 import 'package:ayobami/domain/entities/app_settings.dart';
@@ -8,6 +8,26 @@ import 'package:ayobami/domain/repositories/settings_repository.dart';
 import 'package:ayobami/core/services/notification_service.dart';
 import 'package:ayobami/data/datasources/local/price_alerts_service.dart';
 import 'package:workmanager/workmanager.dart';
+
+class ActivePosition {
+  final String symbol;
+  final double entryPrice;
+  final double quantity;
+  double stopLoss;
+  final double takeProfit;
+  double highestPrice;
+  final DateTime timestamp;
+
+  ActivePosition({
+    required this.symbol,
+    required this.entryPrice,
+    required this.quantity,
+    required this.stopLoss,
+    required this.takeProfit,
+    required this.highestPrice,
+    required this.timestamp,
+  });
+}
 
 class AutonomousTradingService {
   final ExchangeService exchangeService;
@@ -70,13 +90,11 @@ class AutonomousTradingService {
     }
   }
 
-  
   /// Portfolio rebalancing (ensure assets stay within target ratios)
   Future<void> rebalance(Map<String, double> targetRatios) async {
     print('AutonomousTradingService: Starting rebalancing...');
     try {
       final balances = await exchangeService.getBalances();
-      final settings = await settingsRepository.getSettings();
       
       // Calculate total portfolio value
       double totalValue = 0;
@@ -103,18 +121,22 @@ class AutonomousTradingService {
           if (currentValue < targetValue) {
             // Buy
             final amountToSpend = targetValue - currentValue;
-            final quantity = amountToSpend / (await exchangeService.getPrice('${asset}USDT'));
+            final price = await exchangeService.getPrice('${asset}USDT');
+            final quantity = amountToSpend / price;
             await exchangeService.placeBuyOrder(
               symbol: '${asset}USDT',
               amount: quantity,
+              price: price,
             );
             print('AutonomousTradingService: Rebalanced - Bought $quantity of $asset');
           } else {
             // Sell
-            final quantity = (currentValue - targetValue) / (await exchangeService.getPrice('${asset}USDT'));
+            final price = await exchangeService.getPrice('${asset}USDT');
+            final quantity = (currentValue - targetValue) / price;
             await exchangeService.placeSellOrder(
               symbol: '${asset}USDT',
               quantity: quantity,
+              price: price,
             );
             print('AutonomousTradingService: Rebalanced - Sold $quantity of $asset');
           }
@@ -165,7 +187,6 @@ class AutonomousTradingService {
         final position = _activePositions[symbol]!;
         final currentPrice = await exchangeService.getPrice(symbol);
         
-        
         // Update highest price for trailing stop
         if (currentPrice > position.highestPrice) {
           position.highestPrice = currentPrice;
@@ -197,6 +218,7 @@ class AutonomousTradingService {
       await exchangeService.placeSellOrder(
         symbol: symbol,
         quantity: position.quantity,
+        price: price,
       );
       _activePositions.remove(symbol);
       
@@ -222,14 +244,13 @@ class AutonomousTradingService {
       if (!settings.priceAlertsEnabled) return;
 
       // Fetch current prices for top symbols
-      // This is a simplified version, in a real app we'd fetch prices for all alert symbols
       final symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT'];
       final List<Map<String, dynamic>> prices = [];
       
       for (final symbol in symbols) {
         final price = await exchangeService.getPrice(symbol);
         prices.add({
-          'id': symbol.replaceAll('USDT', '').toLowerCase(), // Matching PriceAlert.cryptoId logic
+          'id': symbol.replaceAll('USDT', '').toLowerCase(),
           'currentPrice': price,
         });
       }
@@ -294,85 +315,63 @@ class AutonomousTradingService {
 
     print('AutonomousTradingService: Executing AUTO-BUY for ${signal.symbol} at ${signal.price}');
     
-    final order = await exchangeService.placeBuyOrder(
+    await exchangeService.placeBuyOrder(
       symbol: signal.symbol,
       amount: quantity,
       price: signal.price,
     );
     
-    // Calculate SL/TP based on settings
-    final stopLoss = signal.price * (1 - (settings.stopLossPercent / 100));
-    final takeProfit = signal.price * (1 + (settings.takeProfitPercent / 100));
-
-    // Track the position
+    // Create and track position
     final position = ActivePosition(
       symbol: signal.symbol,
       entryPrice: signal.price,
       quantity: quantity,
-      stopLoss: stopLoss,
-      takeProfit: takeProfit,
+      stopLoss: signal.stopLoss,
+      takeProfit: signal.targetPrice,
       highestPrice: signal.price,
       timestamp: DateTime.now(),
     );
-    _activePositions[signal.symbol] = position;
     
-    // Persist the position
+    _activePositions[signal.symbol] = position;
     await _persistPosition(position);
     
-    print('AutonomousTradingService: Position tracked. SL: $stopLoss, TP: $takeProfit');
+    await notificationService.showNotification(
+      id: signal.symbol.hashCode,
+      title: 'Auto-Trade: Buy ${signal.symbol}',
+      body: 'Bought $quantity at ${signal.price}',
+    );
   }
 
   Future<void> _handleSellSignal(TradingSignal signal, AppSettings settings) async {
-    final position = _activePositions[signal.symbol];
-    if (position == null) return;
-
-    print('AutonomousTradingService: Executing AUTO-SELL for ${signal.symbol} at ${signal.price} (Signal)');
+    final position = _activePositions[signal.symbol]!;
+    
+    print('AutonomousTradingService: Executing AUTO-SELL for ${signal.symbol} at ${signal.price}');
     
     await exchangeService.placeSellOrder(
       symbol: signal.symbol,
       quantity: position.quantity,
+      price: signal.price,
     );
     
     _activePositions.remove(signal.symbol);
-    
-    // Remove from persistent storage
     await localDataSource.deletePosition(signal.symbol);
+    
+    await notificationService.showNotification(
+      id: signal.symbol.hashCode,
+      title: 'Auto-Trade: Sell ${signal.symbol}',
+      body: 'Sold ${position.quantity} at ${signal.price}',
+    );
   }
-  
-  /// Persist a position to local storage
+
   Future<void> _persistPosition(ActivePosition position) async {
-    try {
-      await localDataSource.savePosition({
-        'symbol': position.symbol,
-        'entry_price': position.entryPrice,
-        'quantity': position.quantity,
-        'stop_loss': position.stopLoss,
-        'take_profit': position.takeProfit,
-        'highest_price': position.highestPrice,
-        'timestamp': position.timestamp.toIso8601String(),
-      });
-    } catch (e) {
-      print('AutonomousTradingService: Error persisting position: $e');
-    }
+    await localDataSource.savePosition({
+      'symbol': position.symbol,
+      'entry_price': position.entryPrice,
+      'quantity': position.quantity,
+      'stop_loss': position.stopLoss,
+      'take_profit': position.takeProfit,
+      'highest_price': position.highestPrice,
+      'timestamp': position.timestamp.toIso8601String(),
+    });
   }
-}
-
-class ActivePosition {
-  final String symbol;
-  final double entryPrice;
-  final double quantity;
-  final double stopLoss;
-  final double takeProfit;
-  double highestPrice;
-  final DateTime timestamp;
-
-  ActivePosition({
-    required this.symbol,
-    required this.entryPrice,
-    required this.quantity,
-    required this.stopLoss,
-    required this.takeProfit,
-    required this.highestPrice,
-    required this.timestamp,
-  });
 }

@@ -138,15 +138,25 @@ Future<void> _initializeExchangeService() async {
     final binanceKey = await secureStorage.read(key: 'binance_api_key');
     final binanceSecret = await secureStorage.read(key: 'binance_api_secret');
     if (binanceKey != null && binanceKey.isNotEmpty && binanceSecret != null && binanceSecret.isNotEmpty) {
-      await exchangeService.initBinance(binanceKey, binanceSecret);
+      await exchangeService.initBinance(
+        apiKey: binanceKey,
+        apiSecret: binanceSecret,
+      );
       print('ExchangeService: Binance initialized successfully');
     }
     
     // Initialize Coinbase if credentials are available
     final coinbaseKey = await secureStorage.read(key: 'coinbase_api_key');
     final coinbaseSecret = await secureStorage.read(key: 'coinbase_api_secret');
-    if (coinbaseKey != null && coinbaseKey.isNotEmpty && coinbaseSecret != null && coinbaseSecret.isNotEmpty) {
-      await exchangeService.initCoinbase(coinbaseKey, coinbaseSecret);
+    final coinbasePassphrase = await secureStorage.read(key: 'coinbase_passphrase');
+    if (coinbaseKey != null && coinbaseKey.isNotEmpty && 
+        coinbaseSecret != null && coinbaseSecret.isNotEmpty &&
+        coinbasePassphrase != null && coinbasePassphrase.isNotEmpty) {
+      await exchangeService.initCoinbase(
+        apiKey: coinbaseKey,
+        apiSecret: coinbaseSecret,
+        passphrase: coinbasePassphrase,
+      );
       print('ExchangeService: Coinbase initialized successfully');
     }
   } catch (e) {

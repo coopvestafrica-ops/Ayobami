@@ -309,7 +309,6 @@ class _CryptoDetailSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${crypto.priceChangePercentage24h >= 0 ? '+' : ''}'
                   '${crypto.priceChangePercentage24h.toStringAsFixed(2)}% (24h)',
                   style: TextStyle(
                     color: crypto.priceChangePercentage24h >= 0
@@ -417,7 +416,7 @@ class _CryptoDetailSheet extends StatelessWidget {
     }
 
     final exchangeService = ExchangeService();
-    exchangeService.initBinance(
+    await exchangeService.initBinance(
       apiKey: apiKey,
       apiSecret: apiSecret,
       isTestnet: isTestnet,
@@ -465,6 +464,7 @@ class _CryptoDetailSheet extends StatelessWidget {
                       await exchangeService.placeSellOrder(
                         symbol: '${crypto.symbol.toUpperCase()}USDT',
                         quantity: amount,
+                        price: crypto.currentPrice,
                       );
                     }
                     if (context.mounted) {

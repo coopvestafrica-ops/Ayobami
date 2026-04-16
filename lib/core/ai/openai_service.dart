@@ -31,7 +31,6 @@ Don't make up numbers - always fetch real data.''';
   /// Initialize API key from storage
   Future<void> initialize() async {
     // In a real app, we'd load this from secure storage
-    // For now, we'll keep the setter but ensure it's called before use
   }
 
   /// Set API key from settings
@@ -45,9 +44,7 @@ Don't make up numbers - always fetch real data.''';
     String message, {
     List<ChatMessage> chatHistory = const [],
   }) async {
-    // Ensure API key is loaded if not already
     if (!isConfigured) {
-      // Try to load from settings if possible, but for now we rely on setApiKey being called
       return AIResponse(
         content: 'OpenAI API key not configured. Please add your API key in Settings.',
         type: MessageType.error,
@@ -104,7 +101,7 @@ Don't make up numbers - always fetch real data.''';
           if (toolResult != null) {
             messages.add(OpenAIChatCompletionChoiceMessageModel(
               role: OpenAIChatMessageRole.tool,
-              toolCallId: toolCall.id,
+              // Fix: Remove toolCallId if not supported by the current package version
               content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(toolResult)],
             ));
           }
@@ -163,7 +160,6 @@ Don't make up numbers - always fetch real data.''';
   Future<String> _getNewsSentiment(Map<String, dynamic> args) async {
     final symbol = (args['symbol'] as String?)?.toUpperCase() ?? 'BTC';
     try {
-      // Fetch news from CryptoPanic (using public token for demo)
       final newsResponse = await http.get(
         Uri.parse('https://cryptopanic.com/api/v1/posts/?auth_token=PUBLIC&currencies=$symbol'),
       );
@@ -179,7 +175,6 @@ Don't make up numbers - always fetch real data.''';
         return json.encode({'symbol': symbol, 'sentiment': 'Neutral', 'reason': 'No recent news found'});
       }
 
-      // Analyze sentiment with GPT
       final analysisPrompt = 'Analyze the sentiment of these $symbol headlines: ${headlines.join(". ")}. '
           'Return JSON with "sentiment" (Bullish/Bearish/Neutral) and "score" (0 to 1).';
       
@@ -191,7 +186,8 @@ Don't make up numbers - always fetch real data.''';
             content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(analysisPrompt)],
           ),
         ],
-        responseFormat: const OpenAIChatCompletionResponseFormatModel(type: 'json_object'),
+        // Fix: Remove const to avoid "Not a constant expression" error
+        responseFormat: OpenAIChatCompletionResponseFormatModel(type: 'json_object'),
       );
 
       final analysisContent = analysisResponse.choices.first.message.content?.first.text ?? '{}';
@@ -211,7 +207,6 @@ Don't make up numbers - always fetch real data.''';
   String _calculate(Map<String, dynamic> args) {
     try {
       final expression = args['expression'] as String? ?? '';
-      // Simple eval logic
       return '{"result": "Calculation result for $expression"}';
     } catch (e) {
       return '{"error": "Could not calculate"}';

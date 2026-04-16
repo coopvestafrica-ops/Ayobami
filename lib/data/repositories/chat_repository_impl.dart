@@ -1,6 +1,7 @@
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/domain/entities/chat_message.dart';
 import 'package:ayobami/domain/repositories/chat_repository.dart';
+import 'package:ayobami/data/models/chat_message_model.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
   final LocalDataSource localDataSource;

@@ -2,6 +2,21 @@ import 'dart:math';
 import 'package:ayobami/domain/entities/crypto_currency.dart';
 import 'package:ayobami/core/monetization/technical_analysis.dart';
 
+/// Market Sentiment Enum
+enum MarketSentiment {
+  bullish('Bullish', '🚀', 'Market is showing strong upward momentum'),
+  bearish('Bearish', '📉', 'Market is under selling pressure'),
+  neutral('Neutral', '⚖️', 'Market is consolidating'),
+  fearful('Fearful', '😨', 'High volatility and negative sentiment'),
+  greedy('Greedy', '🤑', 'Extreme optimism and potential overextension');
+
+  final String displayName;
+  final String emoji;
+  final String description;
+
+  const MarketSentiment(this.displayName, this.emoji, this.description);
+}
+
 /// AI Trading Signal Generator
 /// Analyzes market data to generate buy/sell/hold signals
 class AITradingSignals {
@@ -23,24 +38,49 @@ class AITradingSignals {
     
     return signals;
   }
+
+  /// Analyze market sentiment
+  MarketSentiment analyzeSentiment(List<CryptoCurrency> cryptos) {
+    if (cryptos.isEmpty) return MarketSentiment.neutral;
+    
+    int upCount = 0;
+    double avgChange = 0;
+    
+    for (final crypto in cryptos) {
+      if (crypto.priceChangePercentage24h > 0) upCount++;
+      avgChange += crypto.priceChangePercentage24h;
+    }
+    
+    avgChange /= cryptos.length;
+    double upRatio = upCount / cryptos.length;
+    
+    if (avgChange > 5 && upRatio > 0.8) return MarketSentiment.greedy;
+    if (avgChange > 1 && upRatio > 0.6) return MarketSentiment.bullish;
+    if (avgChange < -5 && upRatio < 0.2) return MarketSentiment.fearful;
+    if (avgChange < -1 && upRatio < 0.4) return MarketSentiment.bearish;
+    
+    return MarketSentiment.neutral;
+  }
   
   /// Analyze single cryptocurrency using advanced indicators
   TradingSignal? _analyzeCrypto(CryptoCurrency crypto) {
     // 1. Technical Indicators Calculation
-    // Using mock data for historical prices (last 24h ticker data)
+    // Using mock data for historical prices (last 30 intervals)
     final prices = List.generate(30, (i) => crypto.currentPrice * (1 + (Random().nextDouble() - 0.5) * 0.05));
     
     final rsi = _calculateRSI(prices);
-    final macd = _technicalAnalysis.calculateMACD(prices);
-    final bb = _technicalAnalysis.calculateBollingerBands(prices);
+    // Fix: Use named parameters for technical analysis
+    final macd = _technicalAnalysis.calculateMACD(prices: prices);
+    final bb = _technicalAnalysis.calculateBollingerBands(prices: prices);
     
     // 2. Multi-factor Signal Generation
     String type = 'hold';
     double confidence = 0.5;
     String reason = 'Neutral market conditions';
     
+    // Fix: Use string comparison for Bollinger bands signal
     // Strong Buy: RSI Oversold + MACD Bullish Crossover + BB Lower Band Touch
-    if (rsi < 35 && bb.signal == BollingerSignal.OVERSOLD) {
+    if (rsi < 35 && bb.signal == 'OVERSOLD') {
       type = 'buy';
       confidence = 0.88;
       reason = 'Strong Buy: RSI Oversold & Price at Bollinger Lower Band';
@@ -52,7 +92,7 @@ class AITradingSignals {
       reason = 'Moderate Buy: Recovery from dip with positive momentum';
     }
     // Strong Sell: RSI Overbought + BB Upper Band Touch
-    else if (rsi > 65 || bb.signal == BollingerSignal.OVERBOUGHT) {
+    else if (rsi > 65 || bb.signal == 'OVERBOUGHT') {
       type = 'sell';
       confidence = 0.85;
       reason = 'Strong Sell: RSI Overbought & Price at Bollinger Upper Band';
@@ -98,27 +138,4 @@ class AITradingSignals {
   TradingSignal? getSignalFor(CryptoCurrency crypto) {
     return _analyzeCrypto(crypto);
   }
-}
-
-/// Trading Signal Model
-class TradingSignal {
-  final String symbol;
-  final String type; // 'buy', 'sell', 'hold'
-  final double price;
-  final double targetPrice;
-  final double stopLoss;
-  final double confidence;
-  final String reason;
-  final DateTime timestamp;
-  
-  TradingSignal({
-    required this.symbol,
-    required this.type,
-    required this.price,
-    required this.targetPrice,
-    required this.stopLoss,
-    required this.confidence,
-    required this.reason,
-    required this.timestamp,
-  });
 }

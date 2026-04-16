@@ -6,8 +6,6 @@ import 'package:ayobami/presentation/bloc/market/market_bloc.dart';
 import 'package:ayobami/presentation/bloc/market/market_event.dart';
 import 'package:ayobami/presentation/bloc/market/market_state.dart';
 import 'package:ayobami/presentation/bloc/portfolio/portfolio_bloc.dart';
-import 'package:ayobami/presentation/bloc/portfolio/portfolio_event.dart';
-import 'package:ayobami/presentation/bloc/portfolio/portfolio_state.dart';
 import 'package:ayobami/presentation/pages/home_page.dart';
 import 'package:ayobami/presentation/pages/market_page.dart';
 import 'package:ayobami/presentation/pages/trading_signals_page.dart';
@@ -37,10 +35,10 @@ class _MainPageState extends State<MainPage> {
     final portfolioBloc = di.sl<PortfolioBloc>();
     
     // Fetch market data
-    marketBloc.add(const GetMarketDataEvent());
+    marketBloc.add(const LoadMarketDataEvent());
     
     // Fetch portfolio data
-    portfolioBloc.add(const GetPortfolioEvent());
+    portfolioBloc.add(const LoadPortfolioEvent());
   }
 
   @override
