@@ -187,7 +187,7 @@ Don't make up numbers - always fetch real data.''';
           ),
         ],
         // Fix: Remove const to avoid "Not a constant expression" error
-        responseFormat: OpenAIChatCompletionResponseFormatModel.jsonObject,
+        responseFormat: OpenAIResponseFormatModel.jsonObject,
       );
 
       final analysisContent = analysisResponse.choices.first.message.content?.first.text ?? '{}';
