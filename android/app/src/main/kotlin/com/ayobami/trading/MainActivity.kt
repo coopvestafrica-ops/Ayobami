@@ -1,4 +1,4 @@
-package com.example.ayobami
+package com.ayobami.trading
 
 import io.flutter.embedding.android.FlutterActivity
 
