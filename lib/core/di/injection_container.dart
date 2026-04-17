@@ -5,6 +5,7 @@ import 'package:ayobami/core/ai/openai_service.dart';
 import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/core/services/binance_api_service.dart';
 import 'package:ayobami/core/services/autonomous_trading_service.dart';
+import 'package:ayobami/core/services/firebase_service.dart';
 import 'package:ayobami/data/datasources/local/database_helper.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/market_api_service.dart';
@@ -49,6 +50,7 @@ Future<void> init() async {
   );
   
   // Services
+  sl.registerLazySingleton(() => FirebaseService());
   sl.registerLazySingleton(() => ExchangeService());
   sl.registerLazySingleton(() => AITradingSignals());
   sl.registerLazySingleton(() => AutonomousTradingService(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:ayobami/app.dart';
 import 'package:ayobami/core/di/injection_container.dart' as di;
 import 'package:ayobami/core/services/autonomous_trading_service.dart';
@@ -12,6 +13,8 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     print("Workmanager executing task: $task");
     try {
+      // Initialize Firebase in background task
+      await Firebase.initializeApp();
       await di.init();
       final tradingService = GetIt.I<AutonomousTradingService>();
       await tradingService.start();
@@ -26,6 +29,14 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print("Firebase initialized successfully");
+  } catch (e) {
+    print("Firebase initialization error: $e");
+  }
+  
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -36,9 +47,6 @@ void main() async {
   await di.init();
   
   // Start the autonomous trading service
-  // In a real Flutter app, we would use flutter_background_service or workmanager
-  // for true 24/7 background execution. For this implementation, we start it
-  // as a persistent service within the app lifecycle.
   final tradingService = GetIt.I<AutonomousTradingService>();
   await tradingService.start();
   

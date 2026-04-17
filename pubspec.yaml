@@ -30,7 +30,11 @@ dependencies:
   speech_to_text: ^7.3.0
   flutter_tts: ^4.0.0
   crypto: ^3.0.3
-  web_socket_channel: ^3.0.3
+  web_socket_channel: ^2.4.5
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_messaging: ^14.7.19
 
 dev_dependencies:
   flutter_test:
