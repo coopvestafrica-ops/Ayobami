@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:ayobami/app.dart';
+import 'package:ayobami/firebase_options.dart';
 import 'package:ayobami/core/di/injection_container.dart' as di;
 import 'package:ayobami/core/services/autonomous_trading_service.dart';
 import 'package:get_it/get_it.dart';
@@ -14,7 +15,9 @@ void callbackDispatcher() {
     print("Workmanager executing task: $task");
     try {
       // Initialize Firebase in background task
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       await di.init();
       final tradingService = GetIt.I<AutonomousTradingService>();
       await tradingService.start();
@@ -31,7 +34,9 @@ void main() async {
   
   // Initialize Firebase
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     print("Firebase initialized successfully");
   } catch (e) {
     print("Firebase initialization error: $e");
