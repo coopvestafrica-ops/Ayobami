@@ -591,15 +591,15 @@
     },
     {
       "name": "url_launcher",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/url_launcher-6.3.1",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/url_launcher-6.3.2",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.6"
     },
     {
       "name": "url_launcher_android",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.2",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.29",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.9"
     },
     {
       "name": "url_launcher_ios",
@@ -675,27 +675,27 @@
     },
     {
       "name": "webview_flutter",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter-4.8.0",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter-4.13.1",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.8"
     },
     {
       "name": "webview_flutter_android",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_android-3.16.3",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_android-4.11.0",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.9"
     },
     {
       "name": "webview_flutter_platform_interface",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_platform_interface-2.10.0",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_platform_interface-2.15.1",
       "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "3.9"
     },
     {
       "name": "webview_flutter_wkwebview",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_wkwebview-3.14.0",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/webview_flutter_wkwebview-3.24.3",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.9"
     },
     {
       "name": "win32",
@@ -705,7 +705,7 @@
     },
     {
       "name": "workmanager",
-      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/workmanager-0.5.2",
+      "rootUri": "file:///home/ubuntu/.pub-cache/hosted/pub.dev/workmanager-0.6.0",
       "packageUri": "lib/",
       "languageVersion": "3.1"
     },
