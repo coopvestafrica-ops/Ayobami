@@ -186,8 +186,7 @@ Don't make up numbers - always fetch real data.''';
             content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(analysisPrompt)],
           ),
         ],
-        // Fix: Remove const to avoid "Not a constant expression" error
-        responseFormat: OpenAIChatCompletionResponseFormatModel.jsonObject,
+        responseFormat: const {'type': 'json_object'},
       );
 
       final analysisContent = analysisResponse.choices.first.message.content?.first.text ?? '{}';
