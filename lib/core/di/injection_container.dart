@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ayobami/core/ai/openai_service.dart';
 import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/core/services/binance_api_service.dart';
 import 'package:ayobami/core/services/autonomous_trading_service.dart';
@@ -52,7 +51,7 @@ Future<void> init() async {
   // Services
   sl.registerLazySingleton(() => FirebaseService());
   sl.registerLazySingleton(() => ExchangeService());
-  sl.registerLazySingleton(() => AITradingSignals());
+  sl.registerLazySingleton(() => AITradingSignals(binanceApi: sl()));
   sl.registerLazySingleton(() => AutonomousTradingService(
     exchangeService: sl(),
     settingsRepository: sl(),
@@ -123,7 +122,7 @@ Future<void> init() async {
   await notificationService.initialize();
   sl.registerLazySingleton(() => notificationService);
 
-  // Binance API Service - for real-time crypto data
+  // Binance public-data service (no auth) - used for chat tickers and signal klines.
   sl.registerLazySingleton(() => BinanceApiService());
   
   // Initialize Exchange Service with saved credentials

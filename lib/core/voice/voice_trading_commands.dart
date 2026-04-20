@@ -1,5 +1,4 @@
 import 'package:ayobami/domain/entities/crypto_currency.dart';
-import 'package:ayobami/core/ai/trading_signals.dart';
 
 /// Voice trading command parser
 /// Converts spoken commands into actionable trading operations
@@ -187,17 +186,13 @@ class VoiceTradingCommands {
         return 'I couldn\'t find that cryptocurrency. Would you like me to show the market prices?';
       
       case CommandType.signal:
-        // Use AI signals logic
+        // Signals now require a network call; open the Signals page for a
+        // full analysis instead of blocking the voice response on it.
         if (crypto != null) {
-          final signals = AITradingSignals();
-          final signal = signals.getSignalFor(crypto);
-          if (signal != null) {
-            return 'For ${crypto.name}, my analysis shows a ${signal.type.toUpperCase()} signal '
-                   'with ${(signal.confidence * 100).toInt()}% confidence. '
-                   '${signal.reason}';
-          }
+          return 'Open the Trading Signals page to see my live analysis for '
+              '${crypto.name}.';
         }
-        return 'I don\'t have a clear signal for that crypto right now.';
+        return 'Open the Trading Signals page to see live signals.';
       
       case CommandType.alert:
         return 'I\'ll set a price alert for ${command.cryptoSymbol} '

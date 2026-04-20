@@ -19,7 +19,7 @@ class TradingSignalsPage extends StatefulWidget {
 }
 
 class _TradingSignalsPageState extends State<TradingSignalsPage> {
-  final AITradingSignals _signals = AITradingSignals();
+  final AITradingSignals _signals = GetIt.I<AITradingSignals>();
   List<TradingSignal> _signalsList = [];
   MarketSentiment _sentiment = MarketSentiment.neutral;
   bool _isAutoTradeEnabled = false;
@@ -39,15 +39,18 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
     });
   }
   
-  void _generateSignals() {
+  Future<void> _generateSignals() async {
+    final signals = await _signals.analyzeMarket(widget.cryptos);
+    final sentiment = _signals.analyzeSentiment(widget.cryptos);
+    if (!mounted) return;
     setState(() {
-      _signalsList = _signals.analyzeMarket(widget.cryptos);
-      _sentiment = _signals.analyzeSentiment(widget.cryptos);
+      _signalsList = signals;
+      _sentiment = sentiment;
     });
-    
+
     // If auto-trade is enabled, trigger the service for strong signals
     if (_isAutoTradeEnabled) {
-      _triggerAutoTrade();
+      await _triggerAutoTrade();
     }
   }
 
