@@ -38,7 +38,7 @@ class PricePredictor {
             role: OpenAIChatMessageRole.user,
           ),
         ],
-        responseFormat: const OpenAIChatCompletionResponseFormatModel(type: 'json_object'),
+        responseFormat: const {'type': 'json_object'},
       );
 
       final content = chatCompletion.choices.first.message.content?.first.text ?? '{}';

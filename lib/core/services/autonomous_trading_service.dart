@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:ayobami/core/ai/trading_signals.dart' hide TradingSignal;
+import 'package:ayobami/core/ai/trading_signals.dart';
 import 'package:ayobami/data/datasources/local/local_data_source.dart';
 import 'package:ayobami/data/datasources/remote/exchange_service.dart';
 import 'package:ayobami/domain/entities/app_settings.dart';

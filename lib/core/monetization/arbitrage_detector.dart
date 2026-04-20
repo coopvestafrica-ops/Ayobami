@@ -110,6 +110,7 @@ class ArbitrageDetector {
       final sellOrder = await _exchangeService.placeSellOrder(
         symbol: opportunity.symbol,
         quantity: amount / opportunity.buyPrice,
+        price: opportunity.sellPrice,
       );
 
       return sellOrder.isFilled || sellOrder.isPending;
