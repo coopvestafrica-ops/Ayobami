@@ -23,12 +23,26 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
   List<TradingSignal> _signalsList = [];
   MarketSentiment _sentiment = MarketSentiment.neutral;
   bool _isAutoTradeEnabled = false;
-  
+  bool _isLoading = false;
+  int _analyzedCount = 0;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
     _loadSettings();
     _generateSignals();
+  }
+
+  @override
+  void didUpdateWidget(covariant TradingSignalsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If market data arrived after the page was first built (cryptos list
+    // was empty on initial push), re-run the analyser.
+    if (oldWidget.cryptos.length != widget.cryptos.length &&
+        widget.cryptos.isNotEmpty) {
+      _generateSignals();
+    }
   }
   
   Future<void> _loadSettings() async {
@@ -40,17 +54,42 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
   }
   
   Future<void> _generateSignals() async {
-    final signals = await _signals.analyzeMarket(widget.cryptos);
-    final sentiment = _signals.analyzeSentiment(widget.cryptos);
-    if (!mounted) return;
+    if (widget.cryptos.isEmpty) {
+      // Market data not loaded yet - nothing to analyse.
+      setState(() {
+        _isLoading = false;
+        _signalsList = [];
+        _analyzedCount = 0;
+      });
+      return;
+    }
+
     setState(() {
-      _signalsList = signals;
-      _sentiment = sentiment;
+      _isLoading = true;
+      _errorMessage = null;
     });
 
-    // If auto-trade is enabled, trigger the service for strong signals
-    if (_isAutoTradeEnabled) {
-      await _triggerAutoTrade();
+    try {
+      final signals = await _signals.analyzeMarket(widget.cryptos);
+      final sentiment = _signals.analyzeSentiment(widget.cryptos);
+      if (!mounted) return;
+      setState(() {
+        _signalsList = signals;
+        _sentiment = sentiment;
+        _analyzedCount = widget.cryptos.length;
+        _isLoading = false;
+      });
+
+      // If auto-trade is enabled, trigger the service for strong signals.
+      if (_isAutoTradeEnabled) {
+        await _triggerAutoTrade();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not fetch market data: $e';
+      });
     }
   }
 
@@ -167,19 +206,96 @@ class _TradingSignalsPageState extends State<TradingSignalsPage> {
   }
   
   Widget _buildSignalsList() {
-    if (_signalsList.isEmpty) {
+    if (_isLoading) {
       return const Center(
-        child: Text('No signals available'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Fetching Binance klines & running technical analysis…'),
+          ],
+        ),
       );
     }
-    
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _signalsList.length,
-      itemBuilder: (context, index) {
-        final signal = _signalsList[index];
-        return _SignalCard(signal: signal);
-      },
+
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              Text(_errorMessage!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                onPressed: _generateSignals,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widget.cryptos.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            'Waiting for market data to load. Open the Market tab to trigger a refresh.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    if (_signalsList.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.sentiment_neutral, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              Text(
+                'Analysed $_analyzedCount symbols — no actionable signals right now.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Most tickers are sitting in the neutral RSI 35–65 range, '
+                'or are not listed on Binance for klines. Pull to refresh to '
+                're-analyse.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+                onPressed: _generateSignals,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _generateSignals,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _signalsList.length,
+        itemBuilder: (context, index) {
+          final signal = _signalsList[index];
+          return _SignalCard(signal: signal);
+        },
+      ),
     );
   }
 }
