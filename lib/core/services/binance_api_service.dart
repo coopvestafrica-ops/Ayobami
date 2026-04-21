@@ -43,4 +43,33 @@ class BinanceApiService {
     
     return results;
   }
+
+  /// Get historical candlestick closes (public endpoint, no auth required).
+  /// Returns an empty list on any network / parse error so callers can fall
+  /// back to a neutral signal rather than crashing.
+  ///
+  /// [interval] examples: '1m', '5m', '15m', '1h', '4h', '1d'.
+  Future<List<double>> getKlineCloses(
+    String symbol, {
+    String interval = '1h',
+    int limit = 100,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '$_baseUrl/api/v3/klines?symbol=$symbol&interval=$interval&limit=$limit',
+      );
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return const <double>[];
+
+      final data = json.decode(response.body) as List<dynamic>;
+      // Each kline: [openTime, open, high, low, close, volume, closeTime, ...]
+      // Close is index 4, encoded as a string.
+      return data
+          .map((row) => double.tryParse((row as List)[4].toString()) ?? 0.0)
+          .where((v) => v > 0)
+          .toList(growable: false);
+    } catch (_) {
+      return const <double>[];
+    }
+  }
 }
