@@ -1,7 +1,7 @@
 name: ayobami
-description: "Ayobami - General-Purpose Synthetic Intelligence Assistant"
+description: "Ayobami - Enterprise-Grade AI-Powered Trading Intelligence Platform"
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: ^3.3.0
